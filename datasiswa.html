@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Siswa - SMKN 1 Simpang Teritip</title>
+    <!-- Font Awesome untuk Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase JS SDK -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- jsPDF & AutoTable for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- PapaParse for CSV Import -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --sidebar-bg: #2c3e50;
+            --sidebar-text: #ecf0f1;
+            --sidebar-hover: #34495e;
+            --header-height: 60px;
+            --sidebar-width: 260px;
+            --bg-light: #f4f6f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Navbar --- */
+        .navbar {
+            height: var(--header-height);
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            z-index: 1002;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+        }
+
+        .navbar {
+            justify-content: space-between;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #333;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            width: auto;
+        }
+
+        .navbar-brand span {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+        }
+
+        /* --- Navbar Dashboard Button --- */
+        .navbar-dashboard-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(to right, #667eea, #764ba2);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .navbar-dashboard-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* --- Main Content --- */
+        .main-content {
+            margin-top: var(--header-height);
+            margin-left: 0;
+            padding: 2rem;
+            flex: 1;
+            min-width: 0;
+            max-width: 100%;
+            overflow-x: hidden;
+            overflow-y: auto;
+            transition: margin-left 0.3s ease;
+        }
+
+        .dashboard-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        /* Footer */
+        .main-footer {
+            text-align: center;
+            padding: 20px;
+            color: #888;
+            font-size: 0.85rem;
+            border-top: 1px solid #eee;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .navbar-brand span {
+                font-size: 1rem;
+            }
+        }
+
+        /* --- Styles Tambahan untuk Tabel dan Tombol --- */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            color: white;
+        }
+        .btn-primary { background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-danger { background-color: #ef4444; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-success { background-color: #10b981; }
+        .btn-success:hover { background-color: #059669; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+        .custom-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .custom-table th, .custom-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        .custom-table th { background-color: #f8f9fa; color: #555; font-weight: 600; }
+        .custom-table tr:hover { background-color: #f9f9f9; }
+
+        /* --- Modal Styles --- */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background-color: white; width: 90%; max-width: 500px; padding: 25px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: slideDown 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .modal-header h3 { margin: 0; color: #333; font-size: 1.2rem; }
+        .close-modal { font-size: 1.5rem; cursor: pointer; color: #888; transition: color 0.2s; }
+        .close-modal:hover { color: #ef4444; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #666; font-size: 0.9rem; font-weight: 500; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; transition: border-color 0.3s; background-color: #fff; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        .form-group textarea { resize: vertical; min-height: 80px; }
+        
+        /* Styling khusus untuk input date agar lebih menarik */
+        input[type="date"] { position: relative; padding-right: 10px; color: #444; }
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; opacity: 0.6; transition: 0.3s; }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover { opacity: 1; transform: scale(1.1); }
+
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+        .btn-secondary { background-color: #e2e8f0; color: #475569; }
+        .btn-secondary:hover { background-color: #cbd5e1; }
+
+        /* Search Box Style */
+        .search-box { position: relative; min-width: 250px; }
+        .search-box input { 
+            width: 100%; padding: 10px 15px 10px 35px; 
+            border: 1px solid #ddd; border-radius: 6px; 
+            font-size: 0.9rem; transition: border-color 0.3s; 
+        }
+        .search-box input:focus { outline: none; border-color: var(--primary-color); }
+        .search-box i { 
+            position: absolute; left: 12px; top: 50%; 
+            transform: translateY(-50%); color: #999; 
+        }
+        @media (max-width: 768px) { .search-box { width: 100%; margin-top: 10px; } #filterJk, #filterTahunMasuk { width: 100%; margin-top: 10px; } }
+
+        /* --- Perbaikan Responsif Tambahan (Mobile) --- */
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .toolbar-filters {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .toolbar-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .main-content { padding: 1rem; }
+            .dashboard-card { padding: 15px; }
+            .toolbar-filters,
+            .toolbar-buttons { width: 100%; }
+            .toolbar-buttons .btn { flex: 1 1 calc(50% - 5px); justify-content: center; }
+            .form-group[style*="grid-template-columns"] {
+                display: grid !important;
+                grid-template-columns: 1fr !important;
+            }
+            .modal-content { width: 92%; padding: 18px; }
+        }
+
+        @media (max-width: 400px) {
+            .toolbar-buttons .btn { flex: 1 1 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="dasboradmin.html" class="navbar-brand">
+            <img src="" alt="Logo Sekolah" style="display: none;">
+            <span></span>
+        </a>
+        <a href="dasboradmin.html" class="navbar-dashboard-btn">
+            <i class="fas fa-th-large"></i> Dashboard
+        </a>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="dashboard-card">
+            <h2>Data Siswa</h2>
+            <p style="color: #666; margin-top: 10px;">Halaman untuk mengelola data siswa.</p>
+        </div>
+        
+        <!-- Container Tabel Data Siswa -->
+        <div class="dashboard-card">
+            <div class="table-toolbar">
+                <div class="toolbar-filters">
+                    <button class="btn btn-primary" id="addSiswaBtn"><i class="fas fa-plus"></i> Tambah Siswa</button>
+                    <div class="search-box" title="Cari data siswa">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" placeholder="Cari NISN atau Nama...">
+                    </div>
+                    <select id="filterJk" title="Filter berdasarkan Jenis Kelamin" style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background-color: #fff;">
+                        <option value="">Semua Jenis Kelamin</option>
+                        <option value="Laki-Laki">Laki-Laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
+                    <select id="filterTahunMasuk" title="Filter berdasarkan Tahun Masuk" style="padding: 10px 15px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; background-color: #fff;">
+                        <option value="">Semua Tahun Masuk</option>
+                    </select>
+                </div>
+                <div class="toolbar-buttons">
+                    <button class="btn btn-success" id="importBtn"><i class="fas fa-file-import"></i> Import CSV</button>
+                    <button class="btn btn-primary" id="kirimLinkBtn"><i class="fas fa-share"></i> Kirim Link</button>
+                    <button class="btn btn-danger" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> Export Pdf</button>
+                    <button class="btn btn-success" id="exportExcelBtn" style="background-color:#217346;"><i class="fas fa-file-excel"></i> Export Excel</button>
+                    <button class="btn" id="alumniBtn" disabled style="background-color:#8b5cf6;"><i class="fas fa-user-graduate"></i> Alumni</button>
+                </div>
+                <input type="file" id="importFile" accept=".csv" style="display: none;" title="Pilih file CSV untuk diimport">
+            </div>
+
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th style="text-align:center;"><input type="checkbox" id="selectAllCheckbox" title="Pilih Semua"></th>
+                            <th>NISN</th>
+                            <th>Nama Siswa</th>
+                            <th>Tempat Lahir</th>
+                            <th>Tanggal Lahir</th>
+                            <th>Usia</th>
+                            <th>Jenis Kelamin</th>
+                            <th>Nama Ayah</th>
+                            <th>Nama Ibu</th>
+                            <th>Alamat</th>
+                            <th>Nomor Akta</th>
+                            <th>Nomor KK</th>
+                            <th>Tahun Masuk</th>
+                            <th>Photo</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="15" style="text-align: center; color: #888; padding: 20px;">Belum ada data siswa.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <p>&copy; 2026 SMKN 1 SIMPANG TERITIP.</p>
+            <p>CopyRight Kenji Studio Developer.</p>
+        </footer>
+    </main>
+
+    <!-- Modal Tambah Siswa -->
+    <div id="siswaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tambah Siswa Baru</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="siswaForm">
+                <!-- Hidden Input untuk Mode Edit -->
+                <input type="hidden" id="isEditMode" value="false">
+                <div class="form-group">
+                    <label for="nisn">NISN</label>
+                    <input type="text" id="nisn" name="nisn" placeholder="Nomor Induk Siswa Nasional" inputmode="numeric" pattern="[0-9]*" maxlength="20" required>
+                </div>
+                <div class="form-group">
+                    <label for="namaSiswa">Nama Siswa</label>
+                    <input type="text" id="namaSiswa" name="namaSiswa" placeholder="Nama Lengkap Siswa" required>
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label for="tempatLahir">Tempat Lahir</label>
+                        <input type="text" id="tempatLahir" name="tempatLahir" placeholder="Kota Kelahiran">
+                    </div>
+                    <div>
+                        <label for="tanggalLahir">Tanggal Lahir</label>
+                        <input type="date" id="tanggalLahir" name="tanggalLahir">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="jenisKelamin">Jenis Kelamin</label>
+                    <select id="jenisKelamin" name="jenisKelamin">
+                        <option value="">Pilih Jenis Kelamin</option>
+                        <option value="Laki-Laki">Laki-Laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="namaAyah">Nama Ayah</label>
+                    <input type="text" id="namaAyah" name="namaAyah" placeholder="Nama Ayah Kandung">
+                </div>
+                <div class="form-group">
+                    <label for="namaIbu">Nama Ibu</label>
+                    <input type="text" id="namaIbu" name="namaIbu" placeholder="Nama Ibu Kandung">
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div>
+                        <label for="noAkta">Nomor Akta Kelahiran</label>
+                        <input type="text" id="noAkta" name="noAkta" placeholder="Nomor Akta Kelahiran">
+                    </div>
+                    <div>
+                        <label for="noKk">Nomor Kartu Keluarga</label>
+                        <input type="text" id="noKk" name="noKk" placeholder="Nomor Kartu Keluarga">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="tahunMasuk">Tahun Masuk</label>
+                    <input type="text" id="tahunMasuk" name="tahunMasuk" placeholder="Contoh: 2026">
+                </div>
+                <div class="form-group">
+                    <label for="alamat">Alamat</label>
+                    <textarea id="alamat" name="alamat" placeholder="Alamat Lengkap" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="fotoSiswa">Upload Photo Siswa</label>
+                    <input type="file" id="fotoSiswa" name="fotoSiswa" accept="image/*">
+                    <input type="hidden" id="fotoSiswaUrl" value="">
+                    <div id="fotoPreviewWrap" style="margin-top: 10px; display: none;">
+                        <img id="fotoPreview" src="" alt="Preview Foto Siswa" style="max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #ddd; object-fit: cover;">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-btn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Zoom Photo Siswa -->
+    <div id="photoZoomModal" class="modal">
+        <div class="modal-content" style="max-width: 420px; text-align: center; padding: 15px;">
+            <div class="modal-header" style="border-bottom: none; margin-bottom: 10px;">
+                <h3 id="photoZoomTitle">Foto Siswa</h3>
+                <span class="close-modal" id="closePhotoZoom">&times;</span>
+            </div>
+            <img id="photoZoomImg" src="" alt="Foto Siswa" style="width: 100%; max-height: 70vh; object-fit: contain; border-radius: 8px;">
+        </div>
+    </div>
+
+    <!-- Modal Alumni -->
+    <div id="alumniModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Jadikan Alumni</h3>
+                <span class="close-modal" id="closeAlumniModal">&times;</span>
+            </div>
+            <form id="alumniForm">
+                <div class="form-group">
+                    <label for="tahunLulus">Tahun Lulus</label>
+                    <input type="text" id="tahunLulus" name="tahunLulus" placeholder="Contoh: 2026" required>
+                </div>
+                <div class="form-group">
+                    <label>Siswa Terpilih (<span id="alumniSelectedCount">0</span>)</label>
+                    <ul id="alumniSelectedList" style="max-height: 150px; overflow-y: auto; padding-left: 20px; margin: 0; color: #444; font-size: 0.9rem;"></ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelAlumniBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Simpan sebagai Alumni</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- Supabase Integration for Navbar Identity ---
+        const supabaseUrl = 'https://mjvobqfcoutazqcovtlp.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qdm9icWZjb3V0YXpxY292dGxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzEwMzYsImV4cCI6MjA4NjE0NzAzNn0.jz6JaC9mMTMhLVhXSh1OCnFWDPZ0Cy2tUnHEmWxAR8o';
+        
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // --- Supabase Project Terpisah untuk Data Alumni ---
+        const alumniSupabaseUrl = 'https://ctbskvysuqecnaopqlam.supabase.co';
+        const alumniSupabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0YnNrdnlzdXFlY25hb3BxbGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5NTAwODksImV4cCI6MjA4NjUyNjA4OX0.npr4SV6s8XFxXek0R0jNvdhlnIZrdTqrNvWGYVtMAcY';
+        const alumniSupabaseClient = supabase.createClient(alumniSupabaseUrl, alumniSupabaseKey);
+
+        let schoolData = {}; // Menyimpan data sekolah untuk keperluan export
+
+        async function loadSchoolIdentity() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('identitassekolah')
+                    .select('nama_sekolah, logo, kop_sekolah')
+                    .limit(1)
+                    .single();
+                
+                if (data) {
+                    schoolData = data; // Simpan data ke variabel global
+                    if (data.nama_sekolah) {
+                        document.querySelector('.navbar-brand span').textContent = data.nama_sekolah;
+                    }
+                    if (data.logo) {
+                        const img = document.querySelector('.navbar-brand img');
+                        img.src = data.logo;
+                        img.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading school identity:", err);
+            }
+        }
+        document.addEventListener('DOMContentLoaded', loadSchoolIdentity);
+        document.addEventListener('DOMContentLoaded', loadSiswaData);
+
+        // --- Modal Logic ---
+        const modal = document.getElementById('siswaModal');
+        const addBtn = document.getElementById('addSiswaBtn');
+        const closeSpan = document.querySelector('.close-modal');
+        const cancelBtn = document.querySelector('.cancel-btn');
+        const siswaForm = document.getElementById('siswaForm');
+        const isEditModeInput = document.getElementById('isEditMode');
+        const nisnInput = document.getElementById('nisn');
+
+        // Pastikan hanya angka yang bisa diketik di field NISN (nol di depan tetap dipertahankan)
+        nisnInput.addEventListener('input', () => {
+            nisnInput.value = nisnInput.value.replace(/\D/g, '');
+        });
+
+        // Buka Modal
+        addBtn.addEventListener('click', () => {
+            siswaForm.reset();
+            isEditModeInput.value = "false";
+            nisnInput.readOnly = false; // NISN bisa diedit saat tambah baru
+            document.getElementById('fotoSiswaUrl').value = '';
+            document.getElementById('fotoPreviewWrap').style.display = 'none';
+            document.getElementById('fotoPreview').src = '';
+            compressedFotoBlob = null;
+            document.querySelector('.modal-header h3').textContent = "Tambah Siswa Baru";
+            modal.classList.add('active');
+        });
+
+        // Tutup Modal
+        function closeModal() {
+            modal.classList.remove('active');
+            siswaForm.reset();
+            document.getElementById('fotoSiswaUrl').value = '';
+            document.getElementById('fotoPreviewWrap').style.display = 'none';
+            document.getElementById('fotoPreview').src = '';
+            compressedFotoBlob = null;
+        }
+
+        // --- Kompresi Photo Siswa maksimal 10KB ---
+        let compressedFotoBlob = null; // Hasil kompresi, siap diupload
+
+        function compressImageToTargetSize(file, maxKB = 10) {
+            return new Promise((resolve, reject) => {
+                const objectUrl = URL.createObjectURL(file);
+                const img = new Image();
+
+                img.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+
+                    // Batasi dimensi awal supaya proses kompresi lebih cepat & efektif
+                    const maxDim = 300;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxDim || height > maxDim) {
+                        const scale = maxDim / Math.max(width, height);
+                        width = Math.round(width * scale);
+                        height = Math.round(height * scale);
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    function tryCompress(w, h, quality) {
+                        canvas.width = w;
+                        canvas.height = h;
+                        ctx.clearRect(0, 0, w, h);
+                        ctx.drawImage(img, 0, 0, w, h);
+
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                reject(new Error('Gagal memproses gambar.'));
+                                return;
+                            }
+                            const sizeOk = blob.size <= maxKB * 1024;
+                            const reachedMin = w <= 40 && quality <= 0.1;
+
+                            if (sizeOk || reachedMin) {
+                                resolve(blob);
+                            } else if (quality > 0.1) {
+                                // Turunkan kualitas dulu sebelum memperkecil dimensi
+                                tryCompress(w, h, Math.round((quality - 0.1) * 10) / 10);
+                            } else {
+                                // Kualitas sudah minimum, perkecil dimensi lalu ulangi dari kualitas awal
+                                const newW = Math.max(40, Math.round(w * 0.8));
+                                const newH = Math.max(40, Math.round(h * 0.8));
+                                tryCompress(newW, newH, 0.7);
+                            }
+                        }, 'image/jpeg', quality);
+                    }
+
+                    tryCompress(width, height, 0.7);
+                };
+
+                img.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    reject(new Error('Gagal memuat gambar.'));
+                };
+
+                img.src = objectUrl;
+            });
+        }
+
+        // Preview foto saat file dipilih (sekaligus kompres ke maks 10KB)
+        document.getElementById('fotoSiswa').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const previewWrap = document.getElementById('fotoPreviewWrap');
+            const previewImg = document.getElementById('fotoPreview');
+
+            try {
+                previewWrap.style.display = 'block';
+                previewImg.src = '';
+                compressedFotoBlob = await compressImageToTargetSize(file, 20);
+                previewImg.src = URL.createObjectURL(compressedFotoBlob);
+            } catch (err) {
+                console.error('Gagal mengompres foto:', err);
+                alert('Gagal memproses foto: ' + err.message);
+                compressedFotoBlob = null;
+                previewWrap.style.display = 'none';
+            }
+        });
+
+        closeSpan.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // --- Modal Zoom Photo Siswa ---
+        const photoZoomModal = document.getElementById('photoZoomModal');
+        const closePhotoZoomBtn = document.getElementById('closePhotoZoom');
+
+        window.openPhotoZoom = function(photoUrl, namaSiswa) {
+            document.getElementById('photoZoomImg').src = photoUrl;
+            document.getElementById('photoZoomTitle').textContent = namaSiswa ? `Foto ${namaSiswa}` : 'Foto Siswa';
+            photoZoomModal.classList.add('active');
+        };
+
+        function closePhotoZoom() {
+            photoZoomModal.classList.remove('active');
+            document.getElementById('photoZoomImg').src = '';
+        }
+
+        closePhotoZoomBtn.addEventListener('click', closePhotoZoom);
+        window.addEventListener('click', (e) => {
+            if (e.target === photoZoomModal) closePhotoZoom();
+        });
+
+        // Variabel global untuk menyimpan data siswa
+        let allSiswaData = [];
+        let currentFilteredData = []; // Data hasil filter terkini (dipakai untuk Export Pdf kolektif)
+
+        // --- Load Data Siswa ---
+        async function loadSiswaData() {
+            const tableBody = document.querySelector('.custom-table tbody');
+            tableBody.innerHTML = '<tr><td colspan="15" style="text-align:center;">Memuat data...</td></tr>';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('datasiswa')
+                    .select('*')
+                    .order('nama_siswa', { ascending: true });
+
+                if (error) throw error;
+
+                allSiswaData = data; // Simpan data ke variabel global
+                currentFilteredData = data;
+                populateTahunMasukFilter();
+                renderSiswaTable(allSiswaData);
+
+            } catch (err) {
+                console.error('Error loading siswa data:', err);
+                tableBody.innerHTML = `<tr><td colspan="15" style="text-align:center; color: #ef4444;">Gagal memuat data: ${err.message}</td></tr>`;
+            }
+        }
+
+        // Isi dropdown Filter Tahun Masuk otomatis dari data yang ada
+        function populateTahunMasukFilter() {
+            const select = document.getElementById('filterTahunMasuk');
+            const currentValue = select.value;
+
+            const years = [...new Set(allSiswaData.map(s => s.tahun_masuk).filter(v => v))]
+                .sort((a, b) => b.toString().localeCompare(a.toString()));
+
+            select.innerHTML = '<option value="">Semua Tahun Masuk</option>' +
+                years.map(y => `<option value="${y}">${y}</option>`).join('');
+
+            if (years.includes(currentValue)) {
+                select.value = currentValue;
+            }
+        }
+
+        // Fungsi Hitung Usia Saat Ini dari Tanggal Lahir
+        function hitungUsia(tanggalLahir) {
+            if (!tanggalLahir) return '-';
+            const lahir = new Date(tanggalLahir);
+            if (isNaN(lahir.getTime())) return '-';
+
+            const sekarang = new Date();
+            let tahun = sekarang.getFullYear() - lahir.getFullYear();
+            let bulan = sekarang.getMonth() - lahir.getMonth();
+            let hari = sekarang.getDate() - lahir.getDate();
+
+            if (hari < 0) {
+                bulan -= 1;
+                hari += new Date(sekarang.getFullYear(), sekarang.getMonth(), 0).getDate();
+            }
+            if (bulan < 0) {
+                tahun -= 1;
+                bulan += 12;
+            }
+
+            return `${tahun} th`;
+        }
+
+        // Fungsi Render Tabel
+        function renderSiswaTable(data) {
+            const tableBody = document.querySelector('.custom-table tbody');
+            tableBody.innerHTML = '';
+
+            if (!data || data.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="16" style="text-align: center; color: #888; padding: 20px;">Data tidak ditemukan.</td></tr>';
+                return;
+            }
+
+            data.forEach((siswa, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td style="text-align:center;"><input type="checkbox" class="siswaCheckbox" data-nisn="${siswa.nisn}"></td>
+                    <td>${siswa.nisn}</td>
+                    <td>${siswa.nama_siswa}</td>
+                    <td>${siswa.tempat_lahir || '-'}</td>
+                    <td>${siswa.tanggal_lahir || '-'}</td>
+                    <td>${hitungUsia(siswa.tanggal_lahir)}</td>
+                    <td>${siswa.jk || '-'}</td>
+                    <td>${siswa.nama_ayah || '-'}</td>
+                    <td>${siswa.nama_ibu || '-'}</td>
+                    <td>${siswa.alamat}</td>
+                    <td>${siswa.no_akta || '-'}</td>
+                    <td>${siswa.no_kk || '-'}</td>
+                    <td>${siswa.tahun_masuk || '-'}</td>
+                    <td>
+                        ${siswa.photo
+                            ? `<img src="${siswa.photo}" alt="Foto ${siswa.nama_siswa}" onclick="openPhotoZoom('${siswa.photo.replace(/'/g, "\\'")}', '${(siswa.nama_siswa || '').replace(/'/g, "\\'")}')" style="width:40px; height:40px; border-radius:6px; object-fit:cover; border:1px solid #ddd; cursor:pointer;">`
+                            : '-'}
+                    </td>
+                    <td>
+                        <button onclick="editSiswa('${siswa.nisn}')" style="background:none; border:none; color:#60a5fa; cursor:pointer;" title="Edit"><i class="fas fa-edit"></i></button>
+                        <button onclick="exportSiswaPdf('${siswa.nisn}')" style="background:none; border:none; color:#ef4444; cursor:pointer; margin-left:10px;" title="Export PDF"><i class="fas fa-file-pdf"></i></button>
+                        <button onclick="deleteSiswa('${siswa.nisn}')" style="background:none; border:none; color:#f87171; cursor:pointer; margin-left:10px;" title="Hapus"><i class="fas fa-trash"></i></button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // Reset centang "Pilih Semua" & status tombol Alumni setiap kali tabel digambar ulang
+            const selectAllCb = document.getElementById('selectAllCheckbox');
+            if (selectAllCb) selectAllCb.checked = false;
+            updateAlumniButtonState();
+        }
+
+        // --- Logic Checkbox Pilih Siswa & Tombol Alumni ---
+        function getSelectedSiswaNisn() {
+            return Array.from(document.querySelectorAll('.siswaCheckbox:checked')).map(cb => cb.dataset.nisn);
+        }
+
+        function updateAlumniButtonState() {
+            const selectedCount = document.querySelectorAll('.siswaCheckbox:checked').length;
+            document.getElementById('alumniBtn').disabled = selectedCount === 0;
+        }
+
+        // Delegasi event checkbox baris (karena tabel di-render ulang dinamis)
+        document.querySelector('.custom-table tbody').addEventListener('change', (e) => {
+            if (e.target.classList.contains('siswaCheckbox')) {
+                updateAlumniButtonState();
+            }
+        });
+
+        // Checkbox "Pilih Semua" di header
+        document.getElementById('selectAllCheckbox').addEventListener('change', (e) => {
+            const checked = e.target.checked;
+            document.querySelectorAll('.siswaCheckbox').forEach(cb => {
+                cb.checked = checked;
+            });
+            updateAlumniButtonState();
+        });
+
+        // Tombol Alumni - buka modal input Tahun Lulus
+        const alumniModal = document.getElementById('alumniModal');
+        const alumniForm = document.getElementById('alumniForm');
+
+        document.getElementById('alumniBtn').addEventListener('click', () => {
+            const selectedNisn = getSelectedSiswaNisn();
+            if (selectedNisn.length === 0) return;
+
+            const selectedSiswa = allSiswaData.filter(s => selectedNisn.includes(String(s.nisn)));
+
+            // Tampilkan daftar nama siswa terpilih di dalam modal
+            const listEl = document.getElementById('alumniSelectedList');
+            listEl.innerHTML = selectedSiswa.map(s => `<li>${s.nama_siswa}</li>`).join('');
+            document.getElementById('alumniSelectedCount').textContent = selectedSiswa.length;
+
+            alumniForm.reset();
+            alumniModal.classList.add('active');
+        });
+
+        function closeAlumniModal() {
+            alumniModal.classList.remove('active');
+        }
+        document.getElementById('closeAlumniModal').addEventListener('click', closeAlumniModal);
+        document.getElementById('cancelAlumniBtn').addEventListener('click', closeAlumniModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === alumniModal) closeAlumniModal();
+        });
+
+        // Submit Modal Alumni - simpan siswa terpilih ke tabel alumni (project Supabase terpisah)
+        alumniForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = alumniForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Menyimpan...';
+            submitBtn.disabled = true;
+
+            try {
+                const tahunLulusVal = document.getElementById('tahunLulus').value;
+                const selectedNisn = getSelectedSiswaNisn();
+                const selectedSiswa = allSiswaData.filter(s => selectedNisn.includes(String(s.nisn)));
+
+                if (selectedSiswa.length === 0) {
+                    alert('Tidak ada siswa yang dipilih.');
+                    return;
+                }
+
+                const alumniRows = selectedSiswa.map(s => ({
+                    kode_maping: String(s.nisn),
+                    nisn: s.nisn,
+                    nama_siswa: s.nama_siswa,
+                    alamat: s.alamat,
+                    tempat_lahir: s.tempat_lahir,
+                    tanggal_lahir: s.tanggal_lahir,
+                    nama_ayah: s.nama_ayah,
+                    nama_ibu: s.nama_ibu,
+                    tahun_lulus: tahunLulusVal,
+                    no_akta: s.no_akta,
+                    no_kk: s.no_kk,
+                    tahun_masuk: s.tahun_masuk,
+                    photo: s.photo
+                }));
+
+                const { error } = await alumniSupabaseClient
+                    .from('alumni')
+                    .upsert(alumniRows, { onConflict: 'kode_maping' });
+
+                if (error) throw error;
+
+                // Setelah berhasil tersimpan di tabel alumni, hapus data siswa
+                // yang bersangkutan dari tabel datasiswa
+                const { error: deleteError } = await supabaseClient
+                    .from('datasiswa')
+                    .delete()
+                    .in('nisn', selectedNisn);
+
+                if (deleteError) throw deleteError;
+
+                alert(`${alumniRows.length} siswa berhasil disimpan sebagai Alumni dan dihapus dari Data Siswa.`);
+                closeAlumniModal();
+
+                // Kosongkan centang setelah berhasil
+                document.querySelectorAll('.siswaCheckbox:checked').forEach(cb => cb.checked = false);
+                document.getElementById('selectAllCheckbox').checked = false;
+                updateAlumniButtonState();
+
+                // Refresh tabel data siswa agar baris yang dipindah tidak tampil lagi
+                loadSiswaData();
+            } catch (err) {
+                console.error('Gagal menyimpan data Alumni:', err);
+                alert('Terjadi kesalahan: ' + err.message);
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Event Listener Pencarian & Filter Jenis Kelamin / Tahun Masuk
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const jkTerm = document.getElementById('filterJk').value;
+            const tahunMasukTerm = document.getElementById('filterTahunMasuk').value;
+
+            const filteredData = allSiswaData.filter(siswa => {
+                const matchSearch = (siswa.nisn && siswa.nisn.toString().toLowerCase().includes(searchTerm)) ||
+                    (siswa.nama_siswa && siswa.nama_siswa.toLowerCase().includes(searchTerm));
+                const matchJk = !jkTerm || siswa.jk === jkTerm;
+                const matchTahunMasuk = !tahunMasukTerm || siswa.tahun_masuk === tahunMasukTerm;
+                return matchSearch && matchJk && matchTahunMasuk;
+            });
+
+            currentFilteredData = filteredData; // Simpan untuk keperluan Export Pdf kolektif
+            renderSiswaTable(filteredData);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', applyFilters);
+        document.getElementById('filterJk').addEventListener('change', applyFilters);
+        document.getElementById('filterTahunMasuk').addEventListener('change', applyFilters);
+
+        // --- Fungsi Edit Siswa ---
+        window.editSiswa = function(nisn) {
+            const siswa = allSiswaData.find(s => s.nisn == nisn);
+            if (siswa) {
+                // Isi form dengan data yang dipilih
+                nisnInput.value = siswa.nisn;
+                nisnInput.readOnly = true; // NISN tidak boleh diubah saat edit (Primary Key)
+                document.getElementById('namaSiswa').value = siswa.nama_siswa;
+                document.getElementById('tempatLahir').value = siswa.tempat_lahir || '';
+                document.getElementById('tanggalLahir').value = siswa.tanggal_lahir || '';
+                document.getElementById('jenisKelamin').value = siswa.jk || '';
+                document.getElementById('namaAyah').value = siswa.nama_ayah || '';
+                document.getElementById('namaIbu').value = siswa.nama_ibu || '';
+                document.getElementById('noAkta').value = siswa.no_akta || '';
+                document.getElementById('noKk').value = siswa.no_kk || '';
+                document.getElementById('tahunMasuk').value = siswa.tahun_masuk || '';
+                document.getElementById('alamat').value = siswa.alamat;
+
+                // Isi preview & URL foto yang sudah ada (jika ada)
+                compressedFotoBlob = null;
+                document.getElementById('fotoSiswaUrl').value = siswa.photo || '';
+                if (siswa.photo) {
+                    document.getElementById('fotoPreview').src = siswa.photo;
+                    document.getElementById('fotoPreviewWrap').style.display = 'block';
+                } else {
+                    document.getElementById('fotoPreview').src = '';
+                    document.getElementById('fotoPreviewWrap').style.display = 'none';
+                }
+
+                // Set Mode Edit
+                isEditModeInput.value = "true";
+                document.querySelector('.modal-header h3').textContent = "Edit Data Siswa";
+                
+                // Buka Modal
+                modal.classList.add('active');
+            }
+        }
+
+        // --- Fungsi Hapus Siswa ---
+        window.deleteSiswa = async function(nisn) {
+            if (confirm(`Apakah Anda yakin ingin menghapus data siswa dengan NISN: ${nisn}?`)) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('datasiswa')
+                        .delete()
+                        .eq('nisn', nisn);
+
+                    if (error) throw error;
+
+                    alert('Data berhasil dihapus.');
+                    loadSiswaData(); // Refresh tabel
+                } catch (err) {
+                    console.error('Gagal menghapus:', err);
+                    alert('Gagal menghapus data: ' + err.message);
+                }
+            }
+        }
+
+        // Handle Form Submit (Simpan Data Siswa)
+        siswaForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = siswaForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Menyimpan...';
+            submitBtn.disabled = true;
+
+            try {
+                const isEdit = isEditModeInput.value === "true";
+                const nisnVal = document.getElementById('nisn').value;
+                const namaVal = document.getElementById('namaSiswa').value;
+                const tempatLahirVal = document.getElementById('tempatLahir').value;
+                const tanggalLahirVal = document.getElementById('tanggalLahir').value || null;
+                const jenisKelaminVal = document.getElementById('jenisKelamin').value;
+                const namaAyahVal = document.getElementById('namaAyah').value;
+                const namaIbuVal = document.getElementById('namaIbu').value;
+                const noAktaVal = document.getElementById('noAkta').value;
+                const noKkVal = document.getElementById('noKk').value;
+                const tahunMasukVal = document.getElementById('tahunMasuk').value;
+                const alamatVal = document.getElementById('alamat').value;
+
+                // --- Upload Photo Siswa (jika user memilih file baru, sudah dikompres ke maks 20KB) ---
+                let fotoSiswaUrl = document.getElementById('fotoSiswaUrl').value || null;
+
+                if (compressedFotoBlob) {
+                    const fileName = `${nisnVal}_${Date.now()}.jpg`;
+
+                    const { error: uploadError } = await supabaseClient
+                        .storage
+                        .from('aset')
+                        .upload(fileName, compressedFotoBlob, {
+                            upsert: true,
+                            contentType: 'image/jpeg'
+                        });
+
+                    if (uploadError) throw uploadError;
+
+                    const { data: publicUrlData } = supabaseClient
+                        .storage
+                        .from('aset')
+                        .getPublicUrl(fileName);
+
+                    fotoSiswaUrl = publicUrlData.publicUrl;
+                }
+
+                const siswaData = {
+                    nisn: nisnVal,
+                    nama_siswa: namaVal,
+                    tempat_lahir: tempatLahirVal,
+                    tanggal_lahir: tanggalLahirVal,
+                    jk: jenisKelaminVal,
+                    nama_ayah: namaAyahVal,
+                    nama_ibu: namaIbuVal,
+                    no_akta: noAktaVal,
+                    no_kk: noKkVal,
+                    tahun_masuk: tahunMasukVal,
+                    alamat: alamatVal,
+                    photo: fotoSiswaUrl
+                };
+
+                let result;
+                if (isEdit) {
+                    // Update Data
+                    const { nisn, ...updateData } = siswaData; // Exclude NISN from update payload
+                    result = await supabaseClient
+                        .from('datasiswa')
+                        .update(updateData)
+                        .eq('nisn', nisnVal);
+                } else {
+                    // Insert Data Baru
+                    result = await supabaseClient
+                        .from('datasiswa')
+                        .insert([siswaData]);
+                }
+
+                if (result.error) throw result.error;
+
+                alert('Data Siswa berhasil disimpan!');
+                closeModal();
+                loadSiswaData(); // Refresh tabel
+            } catch (err) {
+                console.error(err);
+                alert('Terjadi kesalahan: ' + err.message);
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // --- Kirim Link (Buka Halaman Input Data Diri) ---
+        document.getElementById('kirimLinkBtn').addEventListener('click', () => {
+            window.open('datadiri.html', '_blank');
+        });
+
+        // --- Export PDF Individu (Buku Induk Siswa) ---
+        window.exportSiswaPdf = async function(nisn) {
+            const siswa = allSiswaData.find(s => s.nisn == nisn);
+            if (!siswa) {
+                alert('Data siswa tidak ditemukan.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            let yPos = 20;
+
+            // Tambahkan KOP Sekolah jika ada (sama seperti Export PDF data)
+            if (schoolData.kop_sekolah) {
+                try {
+                    const response = await fetch(schoolData.kop_sekolah);
+                    const blob = await response.blob();
+                    const base64data = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+
+                    const imgProps = doc.getImageProperties(base64data);
+                    const pdfWidth = pageWidth - 20; // Margin kiri kanan 10
+                    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+                    doc.addImage(base64data, 'PNG', 10, 10, pdfWidth, imgHeight);
+                    yPos = 10 + imgHeight + 10; // Update posisi Y di bawah gambar
+                } catch (err) {
+                    console.error('Gagal memuat KOP Sekolah:', err);
+                }
+            }
+
+            // Judul Dokumen
+            doc.setFontSize(15);
+            doc.setTextColor(0);
+            doc.text('Buku Induk Siswa', pageWidth / 2, yPos, { align: 'center' });
+            yPos += 8;
+
+            // Foto Siswa (tampil di tengah, di bawah judul), jika ada
+            const photoW = 35;
+            const photoH = 42;
+            if (siswa.photo) {
+                try {
+                    const response = await fetch(siswa.photo);
+                    const blob = await response.blob();
+                    const base64Photo = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                    const photoX = (pageWidth - photoW) / 2;
+                    doc.addImage(base64Photo, 'JPEG', photoX, yPos, photoW, photoH);
+                    yPos += photoH + 8;
+                } catch (err) {
+                    console.error('Gagal memuat foto siswa:', err);
+                    yPos += 3;
+                }
+            } else {
+                yPos += 3;
+            }
+
+            // Data Siswa dalam tabel bernomor + garis (No, Label, :, Value)
+            const rows = [
+                ['1', 'NISN', ':', String(siswa.nisn ?? '-')],
+                ['2', 'Nama Siswa', ':', siswa.nama_siswa || '-'],
+                ['3', 'Tempat Lahir', ':', siswa.tempat_lahir || '-'],
+                ['4', 'Tanggal Lahir', ':', siswa.tanggal_lahir || '-'],
+                ['5', 'Usia', ':', hitungUsia(siswa.tanggal_lahir)],
+                ['6', 'Jenis Kelamin', ':', siswa.jk || '-'],
+                ['7', 'Nama Ayah', ':', siswa.nama_ayah || '-'],
+                ['8', 'Nama Ibu', ':', siswa.nama_ibu || '-'],
+                ['9', 'Nomor Akta Kelahiran', ':', siswa.no_akta || '-'],
+                ['10', 'Nomor Kartu Keluarga', ':', siswa.no_kk || '-'],
+                ['11', 'Tahun Masuk', ':', siswa.tahun_masuk || '-'],
+                ['12', 'Alamat', ':', siswa.alamat || '-']
+            ];
+
+            doc.autoTable({
+                body: rows,
+                startY: yPos,
+                theme: 'grid',
+                styles: { fontSize: 10, cellPadding: 2.5, minCellHeight: 0, valign: 'middle', lineColor: [0, 0, 0], lineWidth: 0.2 },
+                columnStyles: {
+                    0: { cellWidth: 10, halign: 'center' },
+                    1: { fontStyle: 'bold', cellWidth: 50 },
+                    2: { cellWidth: 6, halign: 'center' },
+                    3: { cellWidth: pageWidth - 20 - 10 - 50 - 6 }
+                },
+                margin: { left: 10, right: 10 }
+            });
+
+            doc.save(`Buku_Induk_${(siswa.nama_siswa || siswa.nisn).replace(/\s+/g, '_')}.pdf`);
+        };
+
+        // --- Export PDF Logic (Sesuai Ceklis / Filter Aktif, 1 Halaman per Siswa - Format Buku Induk Siswa) ---
+        document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+            const selectedNisnForExport = getSelectedSiswaNisn();
+            const dataToExport = selectedNisnForExport.length > 0
+                ? currentFilteredData.filter(s => selectedNisnForExport.includes(String(s.nisn)))
+                : currentFilteredData;
+
+            if (!dataToExport || dataToExport.length === 0) {
+                alert('Tidak ada data siswa untuk diexport.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // Preload KOP Sekolah sekali saja (dipakai ulang di setiap halaman)
+            let kopBase64 = null;
+            let kopImgProps = null;
+            if (schoolData.kop_sekolah) {
+                try {
+                    const response = await fetch(schoolData.kop_sekolah);
+                    const blob = await response.blob();
+                    kopBase64 = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
+                    });
+                    kopImgProps = doc.getImageProperties(kopBase64);
+                } catch (err) {
+                    console.error('Gagal memuat KOP Sekolah:', err);
+                }
+            }
+
+            for (let i = 0; i < dataToExport.length; i++) {
+                const siswa = dataToExport[i];
+                if (i > 0) doc.addPage();
+
+                let yPos = 20;
+
+                // KOP Sekolah
+                if (kopBase64) {
+                    const pdfWidth = pageWidth - 20;
+                    const imgHeight = (kopImgProps.height * pdfWidth) / kopImgProps.width;
+                    doc.addImage(kopBase64, 'PNG', 10, 10, pdfWidth, imgHeight);
+                    yPos = 10 + imgHeight + 10;
+                }
+
+                // Judul Dokumen
+                doc.setFontSize(15);
+                doc.setTextColor(0);
+                doc.text('Buku Induk Siswa', pageWidth / 2, yPos, { align: 'center' });
+                yPos += 8;
+
+                // Foto Siswa (tampil di tengah, di bawah judul), jika ada
+                const photoW = 35;
+                const photoH = 42;
+                if (siswa.photo) {
+                    try {
+                        const response = await fetch(siswa.photo);
+                        const blob = await response.blob();
+                        const base64Photo = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onloadend = () => resolve(reader.result);
+                            reader.readAsDataURL(blob);
+                        });
+                        const photoX = (pageWidth - photoW) / 2;
+                        doc.addImage(base64Photo, 'JPEG', photoX, yPos, photoW, photoH);
+                        yPos += photoH + 8;
+                    } catch (err) {
+                        console.error('Gagal memuat foto siswa:', err);
+                        yPos += 3;
+                    }
+                } else {
+                    yPos += 3;
+                }
+
+                // Data Siswa dalam tabel bernomor + garis (No, Label, :, Value)
+                const rows = [
+                    ['1', 'NISN', ':', String(siswa.nisn ?? '-')],
+                    ['2', 'Nama Siswa', ':', siswa.nama_siswa || '-'],
+                    ['3', 'Tempat Lahir', ':', siswa.tempat_lahir || '-'],
+                    ['4', 'Tanggal Lahir', ':', siswa.tanggal_lahir || '-'],
+                    ['5', 'Usia', ':', hitungUsia(siswa.tanggal_lahir)],
+                    ['6', 'Jenis Kelamin', ':', siswa.jk || '-'],
+                    ['7', 'Nama Ayah', ':', siswa.nama_ayah || '-'],
+                    ['8', 'Nama Ibu', ':', siswa.nama_ibu || '-'],
+                    ['9', 'Nomor Akta Kelahiran', ':', siswa.no_akta || '-'],
+                    ['10', 'Nomor Kartu Keluarga', ':', siswa.no_kk || '-'],
+                    ['11', 'Tahun Masuk', ':', siswa.tahun_masuk || '-'],
+                    ['12', 'Alamat', ':', siswa.alamat || '-']
+                ];
+
+                doc.autoTable({
+                    body: rows,
+                    startY: yPos,
+                    theme: 'grid',
+                    styles: { fontSize: 10, cellPadding: 2.5, minCellHeight: 0, valign: 'middle', lineColor: [0, 0, 0], lineWidth: 0.2 },
+                    columnStyles: {
+                        0: { cellWidth: 10, halign: 'center' },
+                        1: { fontStyle: 'bold', cellWidth: 50 },
+                        2: { cellWidth: 6, halign: 'center' },
+                        3: { cellWidth: pageWidth - 20 - 10 - 50 - 6 }
+                    },
+                    margin: { left: 10, right: 10 }
+                });
+            }
+
+            // Simpan File
+            const tahunMasukTerm = document.getElementById('filterTahunMasuk').value;
+            let fileName;
+            if (selectedNisnForExport.length > 0) {
+                fileName = 'Buku_Induk_Siswa_Terpilih.pdf';
+            } else if (tahunMasukTerm) {
+                fileName = `Buku_Induk_Siswa_Tahun_Masuk_${tahunMasukTerm}.pdf`;
+            } else {
+                fileName = 'Buku_Induk_Semua_Siswa.pdf';
+            }
+            doc.save(fileName);
+        });
+
+        // --- Export Excel Logic (Selalu Seluruh Data Siswa) ---
+        document.getElementById('exportExcelBtn').addEventListener('click', () => {
+            if (!allSiswaData || allSiswaData.length === 0) {
+                alert('Tidak ada data siswa untuk diexport.');
+                return;
+            }
+
+            const dataForExcel = allSiswaData.map((siswa, index) => ({
+                'No': index + 1,
+                'NISN': siswa.nisn ?? '-',
+                'Nama Siswa': siswa.nama_siswa || '-',
+                'Tempat Lahir': siswa.tempat_lahir || '-',
+                'Tanggal Lahir': siswa.tanggal_lahir || '-',
+                'Usia': hitungUsia(siswa.tanggal_lahir),
+                'Jenis Kelamin': siswa.jk || '-',
+                'Nama Ayah': siswa.nama_ayah || '-',
+                'Nama Ibu': siswa.nama_ibu || '-',
+                'Alamat': siswa.alamat || '-',
+                'Nomor Akta': siswa.no_akta || '-',
+                'Nomor KK': siswa.no_kk || '-',
+                'Tahun Masuk': siswa.tahun_masuk || '-'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+            worksheet['!cols'] = [
+                { wch: 5 },  // No
+                { wch: 15 }, // NISN
+                { wch: 25 }, // Nama Siswa
+                { wch: 18 }, // Tempat Lahir
+                { wch: 15 }, // Tanggal Lahir
+                { wch: 8 },  // Usia
+                { wch: 15 }, // Jenis Kelamin
+                { wch: 20 }, // Nama Ayah
+                { wch: 20 }, // Nama Ibu
+                { wch: 30 }, // Alamat
+                { wch: 20 }, // Nomor Akta
+                { wch: 20 }, // Nomor KK
+                { wch: 12 }  // Tahun Masuk
+            ];
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Siswa');
+            XLSX.writeFile(workbook, 'Data_Semua_Siswa.xlsx');
+        });
+
+        // --- Import CSV Logic ---
+        const importBtn = document.getElementById('importBtn');
+        const importFile = document.getElementById('importFile');
+
+        importBtn.addEventListener('click', () => {
+            importFile.click();
+        });
+
+        importFile.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Parse CSV menggunakan PapaParse
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                dynamicTyping: true, // Konversi angka otomatis
+                complete: async function(results) {
+                    const csvData = results.data;
+                    
+                    if (csvData.length === 0) {
+                        alert('File CSV kosong atau format salah.');
+                        return;
+                    }
+
+                    try {
+                        // Insert data ke Supabase (Upsert untuk update jika NISN sudah ada)
+                        // Pastikan header CSV sesuai dengan nama kolom di database
+                        const { error } = await supabaseClient
+                            .from('datasiswa')
+                            .upsert(csvData);
+
+                        if (error) throw error;
+
+                        alert(`Berhasil mengimport ${csvData.length} data siswa!`);
+                        loadSiswaData(); // Refresh tabel
+                    } catch (err) {
+                        console.error('Import error:', err);
+                        alert('Gagal import data: ' + err.message + '\n\nPastikan header CSV sesuai: nisn, nama_siswa, tempat_lahir, tanggal_lahir, jk, nama_ayah, nama_ibu, alamat');
+                    }
+                    
+                    // Reset input file agar bisa pilih file yang sama lagi jika perlu
+                    importFile.value = '';
+                },
+                error: function(err) {
+                    console.error('PapaParse error:', err);
+                    alert('Gagal membaca file CSV.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
