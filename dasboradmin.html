@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Admin - SMKN 1 Simpang Teritip</title>
-    <!-- Font Awesome untuk Icon -->
+    <title>Data Guru - SIMPEDIK</title>
+    <!-- Icon Keren -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Supabase JS SDK -->
+    <!-- Supabase SDK -->
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <!-- Chart.js Library -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root {
             --primary-color: #667eea;
@@ -26,28 +27,14 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            /* background-color: var(--bg-light); */
+            background-color: var(--bg-light);
             display: flex;
             flex-direction: column;
             height: 100vh;
-            overflow: hidden; /* Mencegah scroll ganda pada body */
+            overflow: hidden;
         }
 
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: url('bg2.jpg') no-repeat center center;
-            background-size: cover;
-            filter: blur(5px);
-            transform: scale(1.05); /* Menghindari pinggiran putih akibat blur */
-            z-index: -1;
-        }
-
-        /* --- Navbar --- */
+        /* --- Navigasi Atas --- */
         .navbar {
             height: var(--header-height);
             background-color: #fff;
@@ -57,11 +44,8 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             z-index: 1002;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0;
         }
-
 
         .navbar-brand {
             display: flex;
@@ -71,28 +55,17 @@
             color: #333;
         }
 
-        .navbar-brand img {
-            height: 40px;
-            width: auto;
-        }
+        .navbar-brand img { height: 40px; width: auto; }
+        .navbar-brand span { font-weight: 700; font-size: 1.1rem; color: var(--secondary-color); }
 
-        .navbar-brand span {
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--secondary-color);
-        }
-
-
-        /* --- Main Content --- */
+        /* --- Konten Utama --- */
         .main-content {
             margin-top: var(--header-height);
-            margin-left: 0; /* Default: Full width */
+            margin-left: 0;
             padding: 2rem;
             flex: 1;
             overflow-y: auto;
-            transition: margin-left 0.3s ease;
         }
-
 
         .dashboard-card {
             background: white;
@@ -100,60 +73,9 @@
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             margin-bottom: 20px;
-            overflow: visible;
         }
 
-        /* --- Dashboard Widgets --- */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .stat-info h3 { font-size: 2rem; margin-bottom: 5px; color: #333; }
-        .stat-info p { color: #777; font-size: 0.9rem; }
-        .stat-icon { font-size: 2.5rem; opacity: 0.2; }
-
-        .charts-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .chart-card, .table-card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-
-        .card-header { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .card-header h3 { font-size: 1.1rem; color: #444; }
-
-        /* Tables */
-        .table-responsive { overflow-x: auto; }
-        .custom-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        .custom-table th, .custom-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #f1f1f1; }
-        .custom-table th { background-color: #f8f9fa; color: #555; font-weight: 600; }
-        .custom-table tr:hover { background-color: #f9f9f9; }
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; color: white; }
-        .bg-danger { background-color: #e74c3c; }
-        .bg-warning { background-color: #f1c40f; color: #333; }
-        .bg-success { background-color: #2ecc71; }
-
-        /* Footer */
+        /* Kaki Halaman */
         .main-footer {
             text-align: center;
             padding: 20px;
@@ -163,1161 +85,662 @@
             margin-top: 20px;
         }
 
-
-        /* Header Stats Grid Layout */
-        .header-stats-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        @media (min-width: 768px) {
-            .header-stats-grid {
-                grid-template-columns: 3fr 1fr;
-            }
-        }
-
-        .header-stats-grid .dashboard-card {
-            margin-bottom: 0;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        /* Dark Mode Card Styles */
-        .card-dark {
-            background-color: #1f2937;
-            color: #f3f4f6;
-            border: 1px solid #374151;
-        }
-
-        .card-dark .card-header {
-            border-bottom: 1px solid #374151;
-        }
-
-        .card-dark .card-header h3 {
-            color: #f3f4f6;
-        }
-
-        .card-dark .custom-table th {
-            background-color: #111827;
-            color: #9ca3af;
-            border-bottom: 1px solid #374151;
-        }
-
-        .card-dark .custom-table td {
-            border-bottom: 1px solid #374151;
-            color: #d1d5db;
-        }
-
-        .card-dark .custom-table tr:hover {
-            background-color: #374151;
-        }
-
-        @media (max-width: 768px) {
-            .navbar-brand span {
-                font-size: 1rem; /* Sedikit lebih kecil di HP */
-            }
-            .navbar-date {
-                display: none !important;
-            }
-            .main-content {
-                padding-left: 5px;
-                padding-right: 5px;
-            }
-        }
-
-
-        /* --- Accordion Styles --- */
-        .accordion-item {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            overflow: visible;
-        }
-
-        .accordion-header {
-            background-color: #f8f9fa;
-            padding: 15px 20px;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: background-color 0.2s;
-        }
-
-        .accordion-header:hover {
-            background-color: #f1f3f5;
-        }
-
-        .accordion-header.active {
-            background-color: var(--primary-color);
-            color: white;
-        }
-
-        .accordion-title {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .accordion-icon {
-            transition: transform 0.3s;
-        }
-
-        .accordion-header.active .accordion-icon {
-            transform: rotate(180deg);
-        }
-
-        .accordion-content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.4s ease-out, background-color 0.3s;
-            background-color: white;
-        }
-
-        .accordion-content.active {
-            max-height: 2000px;
-            background-color: #F5F5F5;
-            overflow: visible;
-        }
-
-        .accordion-body {
-            padding: 20px;
-            color: #666;
-            line-height: 1.6;
-            overflow: visible;
-        }
-
-        /* --- Menu Icon Button Styles --- */
-        .menu-icon-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-            gap: 16px;
-            padding: 20px 0 10px 0;
-        }
-
-        .menu-icon-btn {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            text-decoration: none;
-            gap: 8px;
-            cursor: pointer;
-        }
-
-        .menu-icon-circle {
-            width: 64px;
-            height: 64px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.6rem;
-            transition: all 0.25s ease;
+        /* --- Gaya Tabel & Tombol --- */
+        .btn {
+            padding: 10px 20px;
             border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        .menu-icon-btn:hover .menu-icon-circle {
-            transform: translateY(-5px) scale(1.07);
-            box-shadow: 0 10px 24px rgba(0,0,0,0.25);
-            filter: brightness(1.1);
-        }
-
-        /* Palet warna per tombol */
-        .ic-indigo   { background: linear-gradient(135deg, #667eea, #764ba2); }
-        .ic-teal     { background: linear-gradient(135deg, #11998e, #38ef7d); }
-        .ic-orange   { background: linear-gradient(135deg, #f7971e, #ffd200); }
-        .ic-red      { background: linear-gradient(135deg, #f953c6, #b91d73); }
-        .ic-blue     { background: linear-gradient(135deg, #2980b9, #6dd5fa); }
-        .ic-green    { background: linear-gradient(135deg, #56ab2f, #a8e063); }
-        .ic-purple   { background: linear-gradient(135deg, #8e2de2, #4a00e0); }
-        .ic-pink     { background: linear-gradient(135deg, #ee0979, #ff6a00); }
-        .ic-cyan     { background: linear-gradient(135deg, #00b4db, #0083b0); }
-        .ic-amber    { background: linear-gradient(135deg, #f2994a, #f2c94c); }
-        .ic-rose     { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
-        .ic-slate    { background: linear-gradient(135deg, #485563, #29323c); }
-        .ic-lime     { background: linear-gradient(135deg, #6dd400, #44c805); }
-        .ic-sky      { background: linear-gradient(135deg, #4facfe, #00f2fe); }
-        .ic-violet   { background: linear-gradient(135deg, #a18cd1, #fbc2eb); }
-        .ic-emerald  { background: linear-gradient(135deg, #0ba360, #3cba92); }
-        .ic-fuchsia  { background: linear-gradient(135deg, #d558c8, #24d292); }
-        .ic-coral    { background: linear-gradient(135deg, #ff9a9e, #fecfef); color: #b5306a; }
-        .ic-navy     { background: linear-gradient(135deg, #373b44, #4286f4); }
-        .ic-gold     { background: linear-gradient(135deg, #f6d365, #fda085); color: #7a3800; }
-        .ic-danger   { background: linear-gradient(135deg, #e74c3c, #c0392b); }
-        .ic-mint     { background: linear-gradient(135deg, #43e97b, #38f9d7); color: #1a6b4a; }
-        .ic-ocean    { background: linear-gradient(135deg, #2193b0, #6dd5ed); }
-        .ic-sunset   { background: linear-gradient(135deg, #f093fb, #f5576c); }
-
-        .menu-icon-label {
-            font-size: 0.72rem;
-            color: #444;
-            text-align: center;
-            line-height: 1.3;
-            width: 84px;
-            word-wrap: break-word;
+            border-radius: 6px;
             font-weight: 600;
-            height: 2.6em;
-            display: flex;
+            cursor: pointer;
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-        }
-
-        .menu-icon-btn:hover .menu-icon-label {
-            color: #333;
-        }
-
-        /* Sembunyikan popover lama (tidak dipakai lagi) */
-        .popover {
-            display: none;
-        }
-
-        /* --- Popover Data Pembimbing --- */
-        .menu-icon-btn-popover-wrapper {
-            position: relative;
-        }
-
-        .pembimbing-popover {
-            display: none;
-            position: absolute;
-            bottom: calc(100% + 12px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 28px rgba(0,0,0,0.2);
-            padding: 8px;
-            min-width: 190px;
-            z-index: 1010;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .pembimbing-popover.show {
-            display: flex;
-            animation: popoverFadeIn 0.15s ease-out;
-        }
-
-        @keyframes popoverFadeIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(4px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-
-        .pembimbing-popover::before {
-            content: "";
-            position: absolute;
-            bottom: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 0;
-            height: 0;
-            border-left: 7px solid transparent;
-            border-right: 7px solid transparent;
-            border-top: 7px solid white;
-        }
-
-        .popover-menu-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            text-decoration: none;
-            color: #444;
-            font-size: 0.85rem;
-            font-weight: 600;
-            white-space: nowrap;
-            transition: background-color 0.2s, color 0.2s;
-        }
-
-        .popover-menu-item:hover {
-            background-color: #f1f3f5;
-            color: var(--primary-color);
-        }
-
-        .popover-menu-item .popover-menu-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+            font-size: 0.9rem;
             color: white;
-            font-size: 0.85rem;
-            flex-shrink: 0;
         }
+        .btn-primary { background: linear-gradient(to right, var(--primary-color), var(--secondary-color)); }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-danger { background-color: #ef4444; }
+        .btn-danger:hover { background-color: #dc2626; }
 
-        /* --- Responsive Mobile for Accordion --- */
+        .table-responsive { overflow-x: auto; }
+        .table-scroll-wrapper {
+            max-height: calc(100vh - 260px);
+            min-height: 300px;
+            overflow-y: auto;
+            overflow-x: auto;
+            border: 1px solid #000;
+            border-radius: 4px;
+        }
+        .table-scroll-wrapper .custom-table {
+            margin-top: 0;
+            border: none;
+        }
+        .table-scroll-wrapper .custom-table th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .table-scroll-wrapper::-webkit-scrollbar { width: 7px; }
+        .table-scroll-wrapper::-webkit-scrollbar-track { background: #f1f1f1; }
+        .table-scroll-wrapper::-webkit-scrollbar-thumb { background: #1e3a5f; border-radius: 4px; }
+        .custom-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 1px solid #000; }
+        .custom-table th, .custom-table td { padding: 12px 15px; text-align: left; border: 1px solid #000; }
+        .custom-table th { background-color: #1e3a5f; color: #fff; font-weight: 600; text-align: center; }
+        .custom-table tr:hover { background-color: #f9f9f9; }
+        .guru-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #ddd; }
+
+        /* --- Gaya Modal --- */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background-color: white; width: 90%; max-width: 500px; padding: 25px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); animation: slideDown 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideDown { from { transform: translateY(-50px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .modal-header h3 { margin: 0; color: #333; font-size: 1.2rem; }
+        .close-modal { font-size: 1.5rem; cursor: pointer; color: #888; transition: color 0.2s; }
+        .close-modal:hover { color: #ef4444; }
+        
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #666; font-size: 0.9rem; font-weight: 500; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; transition: border-color 0.3s; }
+        .form-group input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        
+        .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
+        .btn-secondary { background-color: #e2e8f0; color: #475569; }
+        .btn-secondary:hover { background-color: #cbd5e1; }
+
+        /* Custom File Upload Style */
+        .file-upload-label {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 20px; border: 2px dashed #cbd5e1; border-radius: 8px;
+            background-color: #f8fafc; cursor: pointer; transition: all 0.3s; text-align: center;
+        }
+        .file-upload-label:hover { border-color: var(--primary-color); background-color: #eff6ff; }
+        .file-upload-label i { font-size: 2rem; color: var(--primary-color); margin-bottom: 10px; }
+        .file-upload-label span { font-weight: 600; color: #475569; }
+        .file-upload-label small { color: #94a3b8; font-size: 0.8rem; margin-top: 5px; }
+
         @media (max-width: 768px) {
-            .accordion-header {
-                padding: 12px 15px;
+            .navbar-brand span { font-size: 1rem; }
+            .main-content {
+                padding: calc(var(--header-height) + 10px) 5px 5px 5px;
+                margin-top: 0;
             }
-
-            .accordion-title {
-                font-size: 0.85rem;
+            .dashboard-card {
+                padding: 12px 5px;
             }
-
-            .accordion-body {
-                padding: 15px;
-                font-size: 0.85rem;
+            .btn {
+                padding: 8px 10px;
+                font-size: 0.8rem;
             }
-
-            .menu-icon-grid {
-                grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-                gap: 12px;
-                padding: 15px 0 5px 0;
+            .custom-table th, .custom-table td {
+                padding: 8px 6px;
+                font-size: 0.8rem;
             }
-
-            .menu-icon-circle {
-                width: 52px;
-                height: 52px;
-                font-size: 1.3rem;
-                border-radius: 10px;
-            }
-
-            .menu-icon-label {
-                font-size: 0.65rem;
-                width: 65px;
-                height: 2.6em;
+            .main-footer {
+                padding: 15px 5px;
+                font-size: 0.78rem;
             }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navbar -->
+    <!-- Navigasi Atas -->
     <nav class="navbar">
-        <a href="#" class="navbar-brand">
+        <a href="dasboradmin.html" class="navbar-brand">
             <img src="" alt="Logo Sekolah" style="display: none;">
             <span></span>
         </a>
-        <div class="navbar-date" style="margin-left: auto; display: flex; align-items: center; gap: 10px; color: #555; font-weight: 600; font-size: 0.9rem;">
-            <i class="far fa-calendar-alt" style="color: var(--primary-color);"></i>
-            <span id="navbarDate"></span>
-        </div>
     </nav>
 
-
-
-    <!-- Main Content Area -->
+    <!-- Area Konten -->
     <main class="main-content">
-        <div class="header-stats-grid">
-            <div class="dashboard-card">
-                <h2>Selamat Datang, Admin</h2>
-                <p style="color: #666; margin-top: 10px;">Ini adalah halaman dashboard utama aplikasi sekolah.</p>
-            </div>
-            
-            <div class="stat-card">
-                <div class="stat-info">
-                    <h3 id="totalSiswa">0</h3>
-                    <p>Siswa Aktif</p>
-                </div>
-                <i class="fas fa-user-graduate stat-icon" style="color: var(--primary-color);"></i>
-            </div>
-        </div>
-
-        <!-- Accordion Container -->
         <div class="dashboard-card">
-            <div class="card-header">
-                <h3><i class="fas fa-info-circle" style="color: var(--primary-color);"></i> Pilih Menu</h3>
-            </div>
-            
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span class="accordion-title">Menu Sistem</span>
-                    <i class="fas fa-chevron-down accordion-icon"></i>
-                </div>
-                <div class="accordion-content">
-                    <div class="accordion-body">
-                        <div class="menu-icon-grid">
-                            <a href="identitassekolah.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-indigo">
-                                    <i class="fas fa-school"></i>
-                                </div>
-                                <span class="menu-icon-label">Identitas Sekolah</span>
-                            </a>
-                            <a href="rombel.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-teal">
-                                    <i class="fas fa-layer-group"></i>
-                                </div>
-                                <span class="menu-icon-label">Rombongan Belajar</span>
-                            </a>
-                            <a href="dataguru.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-blue">
-                                    <i class="fas fa-chalkboard-teacher"></i>
-                                </div>
-                                <span class="menu-icon-label">Data Guru</span>
-                            </a>
-                            <a href="datasiswa.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-green">
-                                    <i class="fas fa-user-graduate"></i>
-                                </div>
-                                <span class="menu-icon-label">Data Siswa</span>
-                            </a>
-                            <a href="walikelas.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-purple">
-                                    <i class="fas fa-user-tie"></i>
-                                </div>
-                                <span class="menu-icon-label">Walikelas</span>
-                            </a>
-                            <a href="gurupiket.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-orange">
-                                    <i class="fas fa-clipboard-list"></i>
-                                </div>
-                                <span class="menu-icon-label">Guru Piket</span>
-                            </a>
-                            <a href="guruwali.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-pink">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <span class="menu-icon-label">Guru Wali</span>
-                            </a>
-                            <a href="mappingsiswa.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-cyan">
-                                    <i class="fas fa-sitemap"></i>
-                                </div>
-                                <span class="menu-icon-label">Mapping Siswa</span>
-                            </a>
-                            <a href="datamapel.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-amber">
-                                    <i class="fas fa-book"></i>
-                                </div>
-                                <span class="menu-icon-label">Mata Pelajaran</span>
-                            </a>
-                            <a href="jadwalpelajaran.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-sky">
-                                    <i class="fas fa-calendar-alt"></i>
-                                </div>
-                                <span class="menu-icon-label">Jadwal Pelajaran</span>
-                            </a>
-                            <a href="beritaprestasi.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-sunset">
-                                    <i class="fas fa-newspaper"></i>
-                                </div>
-                                <span class="menu-icon-label">Berita &amp; Prestasi</span>
-                            </a>
-                            <a href="Arsipadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-slate">
-                                    <i class="fas fa-archive"></i>
-                                </div>
-                                <span class="menu-icon-label">Arsip</span>
-                            </a>
-                            <a href="alumni.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-teal">
-                                    <i class="fas fa-user-graduate"></i>
-                                </div>
-                                <span class="menu-icon-label">Alumni</span>
-                            </a>
-                            <a href="#" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-slate">
-                                    <i class="fas fa-history"></i>
-                                </div>
-                                <span class="menu-icon-label">Backup & Reset</span>
-                            </a>
-                            <a href="index.html" class="menu-icon-btn" onclick="return confirm('Apakah Anda yakin ingin keluar?');">
-                                <div class="menu-icon-circle ic-danger">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                </div>
-                                <span class="menu-icon-label">Log Out</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span class="accordion-title">Laporan</span>
-                    <i class="fas fa-chevron-down accordion-icon"></i>
-                </div>
-                <div class="accordion-content">
-                    <div class="accordion-body">
-                        <div class="menu-icon-grid">
-                            <a href="piketharianadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-sky">
-                                    <i class="fas fa-calendar-check"></i>
-                                </div>
-                                <span class="menu-icon-label">Piket Harian</span>
-                            </a>
-                            <a href="absensiadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-emerald">
-                                    <i class="fas fa-user-check"></i>
-                                </div>
-                                <span class="menu-icon-label">Kehadiran Siswa</span>
-                            </a>
-                            <a href="pembinaanwaliadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-violet">
-                                    <i class="fas fa-chalkboard-teacher"></i>
-                                </div>
-                                <span class="menu-icon-label">Pembinaan Guru Wali</span>
-                            </a>
-                            <a href="nilaiakademisadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-gold">
-                                    <i class="fas fa-graduation-cap"></i>
-                                </div>
-                                <span class="menu-icon-label">Nilai Akademis</span>
-                            </a>
-                            <a href="kasusadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-rose">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </div>
-                                <span class="menu-icon-label">Kasus</span>
-                            </a>
-                            <a href="dispensasiadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-fuchsia">
-                                    <i class="fas fa-file-signature"></i>
-                                </div>
-                                <span class="menu-icon-label">Dispensasi</span>
-                            </a>
-                            <a href="surveyadmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-ocean">
-                                    <i class="fas fa-poll"></i>
-                                </div>
-                                <span class="menu-icon-label">Survey</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span class="accordion-title">Praktik Kerja Lapangan</span>
-                    <i class="fas fa-chevron-down accordion-icon"></i>
-                </div>
-                <div class="accordion-content">
-                    <div class="accordion-body">
-                        <div class="menu-icon-grid">
-                                <a href="koordinatorpkladmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-indigo">
-                                    <i class="fa fa-user-circle"></i>
-                                </div>
-                                <span class="menu-icon-label">Koordinator PKL</span>
-                            </a>
-
-                            <a href="datadudi.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-navy">
-                                    <i class="fas fa-building"></i>
-                                </div>
-                                <span class="menu-icon-label">Data DUDI</span>
-                            </a>
-                            <div class="menu-icon-btn menu-icon-btn-popover-wrapper" onclick="togglePembimbingPopover(event, this)">
-                                <div class="menu-icon-circle ic-ocean">
-                                    <i class="fas fa-user-tie"></i>
-                                </div>
-                                <span class="menu-icon-label">Data Pembimbing</span>
-
-                                <div class="pembimbing-popover" id="pembimbingPopover" onclick="event.stopPropagation()">
-                                    <a href="pembimbingindustri.html" class="popover-menu-item">
-                                        <span class="popover-menu-icon ic-navy"><i class="fas fa-industry"></i></span>
-                                        <span>Pembimbing Industri</span>
-                                    </a>
-                                    <a href="pembimbingsekolah.html" class="popover-menu-item">
-                                        <span class="popover-menu-icon ic-indigo"><i class="fas fa-school"></i></span>
-                                        <span>Pembimbing Sekolah</span>
-                                    </a>
-                                </div>
-                            </div>
-                            <a href="mappingsiswapkl.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-sunset">
-                                    <i class="fas fa-sitemap"></i>
-                                </div>
-                                <span class="menu-icon-label">Mapping Siswa</span>
-                            </a>
-                            <a href="kehadiransiswapkl.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-lime">
-                                    <i class="fas fa-clipboard-check"></i>
-                                </div>
-                                <span class="menu-icon-label">Kehadiran Siswa PKL</span>
-                            </a>
-                            <a href="nilaisiswapkl.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-amber">
-                                    <i class="fas fa-star"></i>
-                                </div>
-                                <span class="menu-icon-label">Nilai Siswa PKL</span>
-                            </a>
-                            <a href="kasussiswapkl.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-coral">
-                                    <i class="fas fa-exclamation-circle"></i>
-                                </div>
-                                <span class="menu-icon-label">Kasus Siswa PKL</span>
-                            </a>
-                            <a href="tppkladmin.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-violet">
-                                    <i class="fas fa-bullseye"></i>
-                                </div>
-                                <span class="menu-icon-label">SKKNI PKL</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="accordion-item">
-                <div class="accordion-header" onclick="toggleAccordion(this)">
-                    <span class="accordion-title">Tata Usaha</span>
-                    <i class="fas fa-chevron-down accordion-icon"></i>
-                </div>
-                <div class="accordion-content">
-                    <div class="accordion-body">
-                        <div class="menu-icon-grid">
-                            <a href="daftarpegawai.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-cyan">
-                                    <i class="fas fa-id-badge"></i>
-                                </div>
-                                <span class="menu-icon-label">Daftar Pegawai</span>
-                            </a>
-                            <a href="tatapersuratan.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-blue">
-                                    <i class="fas fa-envelope-open-text"></i>
-                                </div>
-                                <span class="menu-icon-label">Tata Persuratan & Arsip</span>
-                            </a>
-                            <a href="daftarpesertasumbangan.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-emerald">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <span class="menu-icon-label">Daftar Peserta Sumbangan Komite</span>
-                            </a>
-                            <a href="pemasukankomite.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-teal">
-                                    <i class="fas fa-arrow-circle-down"></i>
-                                </div>
-                                <span class="menu-icon-label">Pemasukan Sumbangan Komite</span>
-                            </a>
-                            <a href="pengeluarankomite.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-rose">
-                                    <i class="fas fa-arrow-circle-up"></i>
-                                </div>
-                                <span class="menu-icon-label">Pengeluaran Sumbangan Komite</span>
-                            </a>
-                            <a href="neracakomite.html" class="menu-icon-btn">
-                                <div class="menu-icon-circle ic-gold">
-                                    <i class="fas fa-balance-scale"></i>
-                                </div>
-                                <span class="menu-icon-label">Neraca Sumbangan Komite</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <h2>Data Guru</h2>
+            <p style="color: #666; margin-top: 10px;">Halaman untuk mengelola data guru.</p>
         </div>
-        <div class="dashboard-card card-dark">
-            <div class="card-header">
-                <h3><i class="fas fa-layer-group" style="color: #60a5fa;"></i> Data Rombongan Belajar</h3>
+        
+        <!-- Wadah Tabel Guru -->
+        <div class="dashboard-card">
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button class="btn btn-primary" id="addGuruBtn"><i class="fas fa-plus"></i> Tambah Guru</button>
+                <button class="btn btn-danger" id="exportPdfBtn"><i class="fas fa-file-pdf"></i> Export Pdf</button>
+                <a href="dasboradmin.html" class="btn" style="background: linear-gradient(to right, #10b981, #059669);"><i class="fas fa-home"></i> Dashboard</a>
             </div>
-            <div class="table-responsive">
+
+            <div class="table-scroll-wrapper">
                 <table class="custom-table">
                     <thead>
                         <tr>
-                            <th>No</th>
-                            <th>Nama Kelas</th>
-                            <th>Jumlah Siswa</th>
+                            <th>Id Guru</th>
+                            <th>Nama Guru</th>
+                            <th>NIP</th>
+                            <th>Mata Pelajaran</th>
+                            <th>Nomor Telepon</th>
+                            <th>Photo</th>
+                            <th>Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="rombelTableBody">
-                        <tr><td colspan="3" style="text-align:center;">Memuat data...</td></tr>
+                    <tbody>
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #888; padding: 20px;">Belum ada data guru.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- Charts Section -->
-        <div class="charts-grid">
-            <div class="chart-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-chart-bar"></i> Statistik Kehadiran Siswa (Semester Genap)</h3>
-                </div>
-                <div style="position: relative; height: 300px;">
-                    <canvas id="attendanceChart"></canvas>
-                </div>
-            </div>
-            <div class="chart-card">
-                <div class="card-header">
-                    <h3><i class="fas fa-percentage"></i> Perbandingan Kehadiran Per Kelas (<span id="chartMonthLabel">Bulan Ini</span>)</h3>
-                </div>
-                <div style="position: relative; height: 300px;">
-                    <canvas id="classAttendanceChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tables Section -->
-        <div class="charts-grid">
-            <!-- Tabel Nilai Terendah -->
-            <div class="table-card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3><i class="fas fa-sort-numeric-down"></i> Nilai Akademik Terendah (Perlu Perhatian)</h3>
-                    <a href="nilaiakademisadmin.html" style="text-decoration: none; font-size: 0.85rem; padding: 6px 12px; background-color: var(--primary-color); color: white; border-radius: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Lihat Detail</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="custom-table">
-                        <thead>
-                            <tr>
-                                <th>Nama Siswa</th>
-                                <th>Kelas</th>
-                                <th>Mapel</th>
-                                <th>Nilai</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lowestGradesTableBody">
-                            <tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Tabel Kasus -->
-            <div class="table-card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3><i class="fas fa-user-injured"></i> Data Kasus Terbaru</h3>
-                    <a href="kasusadmin.html" style="text-decoration: none; font-size: 0.85rem; padding: 6px 12px; background-color: var(--primary-color); color: white; border-radius: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Lihat Selengkapnya</a>
-                </div>
-                <div class="table-responsive">
-                    <table class="custom-table">
-                        <thead>
-                            <tr>
-                                <th>Tanggal</th>
-                                <th>Siswa</th>
-                                <th>Kelas</th>
-                                <th>Jenis Kasus</th>
-                            </tr>
-                        </thead>
-                        <tbody id="recentCasesTableBody">
-                            <tr><td colspan="4" style="text-align:center;">Memuat data...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer -->
+        <!-- Kaki Halaman -->
         <footer class="main-footer">
-            <p>&copy; 2026 SMKN 1 SIMPANG TERITIP.</p>
+            <p>&copy; SIMPPEDIK (Sistem Informasi Manajemen Perkembangan Pembelajaran Peserta Didik).2026</p>
             <p>CopyRight Kenji Studio Developer.</p>
         </footer>
     </main>
 
+    <!-- Modal Tambah Guru -->
+    <div id="guruModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Tambah Guru Baru</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <form id="guruForm">
+                <!-- Input Ngumpet buat Edit -->
+                <input type="hidden" id="isEditMode" value="false">
+                <div class="form-group">
+                    <label for="idGuru">ID Guru</label>
+                    <input type="text" id="idGuru" name="idGuru" placeholder="Masukkan ID Guru" required>
+                </div>
+                <div class="form-group">
+                    <label for="namaGuru">Nama Guru</label>
+                    <input type="text" id="namaGuru" name="namaGuru" placeholder="Nama Lengkap" required>
+                </div>
+                <div class="form-group">
+                    <label for="nip">NIP</label>
+                    <input type="text" id="nip" name="nip" placeholder="Nomor Induk Pegawai">
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="text" id="password" name="password" placeholder="Password (Otomatis sama dengan NIP)">
+                </div>
+                <div class="form-group">
+                    <label for="mapel">Mata Pelajaran</label>
+                    <input type="text" id="mapel" name="mapel" placeholder="Contoh: Matematika">
+                </div>
+                <div class="form-group">
+                    <label for="telepon">Nomor Tlp/Wa</label>
+                    <input type="tel" id="telepon" name="telepon" placeholder="08xxxxxxxxxx">
+                </div>
+                
+                <div class="form-group">
+                    <label>Upload Photo</label>
+                    <input type="file" id="photoGuru" name="photoGuru" accept="image/*" hidden>
+                    <label for="photoGuru" class="file-upload-label">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <span>Pilih Foto atau Tarik ke Sini</span>
+                        <small>Format: JPG, PNG (Max 2MB)</small>
+                    </label>
+                    <div id="fileNameDisplay" style="margin-top: 8px; font-size: 0.85rem; color: #666; display: none;"></div>
+                    <div id="imagePreviewContainer" style="margin-top: 10px; display: none; text-align: center;">
+                        <img id="imagePreview" src="" alt="Preview Foto" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #ddd; padding: 5px;">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-btn">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Error -->
+    <div id="errorModal" class="modal">
+        <div class="modal-content" style="max-width: 400px; text-align: center; padding-top: 30px;">
+            <div style="margin-bottom: 20px;">
+                <i class="fas fa-exclamation-circle" style="font-size: 4rem; color: #ef4444;"></i>
+            </div>
+            <h3 style="color: #333; margin-bottom: 10px; font-size: 1.4rem;">Terjadi Kesalahan</h3>
+            <p id="errorMessage" style="color: #666; margin-bottom: 25px; line-height: 1.5;"></p>
+            <div style="display: flex; justify-content: center;">
+                <button type="button" class="btn btn-danger" onclick="closeErrorModal()" style="width: 100%;">Tutup</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // --- Accordion Toggle Function ---
-        function toggleAccordion(header) {
-            const content = header.nextElementSibling;
-            const isActive = header.classList.contains('active');
-            
-            // Close all accordion items
-            document.querySelectorAll('.accordion-header').forEach(h => {
-                h.classList.remove('active');
-                h.nextElementSibling.classList.remove('active');
-            });
-            
-            // Open clicked item if it was closed
-            if (!isActive) {
-                header.classList.add('active');
-                content.classList.add('active');
+        // --- Koneksi Navbar ---
+        const supabaseUrl = 'https://fsgqtoainqlkddjkdwrs.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZ3F0b2FpbnFsa2Rkamtkd3JzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzMjkxODQsImV4cCI6MjEwNDkwNTE4NH0.ovLbYvGggpFAUg08UxodR1qBO-AmkKrHIvM0SWqQ7Gs';
+        
+        
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+        let schoolData = {}; // Menyimpan data sekolah untuk keperluan export
+
+        async function loadSchoolIdentity() {
+            try {
+                const { data, error } = await supabaseClient
+                    .from('identitassekolah')
+                    .select('nama_sekolah, logo, kop_sekolah')
+                    .limit(1)
+                    .single();
+                
+                if (data) {
+                    schoolData = data; // Simpan data ke variabel global
+                    if (data.nama_sekolah) {
+                        document.querySelector('.navbar-brand span').textContent = data.nama_sekolah;
+                    }
+                    if (data.logo) {
+                        const img = document.querySelector('.navbar-brand img');
+                        img.src = data.logo;
+                        img.style.display = 'block';
+                    }
+                }
+            } catch (err) {
+                console.error("Error loading school identity:", err);
             }
         }
+        document.addEventListener('DOMContentLoaded', loadSchoolIdentity);
+        document.addEventListener('DOMContentLoaded', loadGuruData);
 
-        // --- Popover Position Function ---
-        function togglePembimbingPopover(event, wrapper) {
-            event.preventDefault();
-            event.stopPropagation();
+        // --- Logika Modal ---
+        const modal = document.getElementById('guruModal');
+        const addBtn = document.getElementById('addGuruBtn');
+        const closeSpan = document.querySelector('.close-modal');
+        const cancelBtn = document.querySelector('.cancel-btn');
+        const guruForm = document.getElementById('guruForm');
+        const photoInput = document.getElementById('photoGuru');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const nipInput = document.getElementById('nip');
+        const idGuruInput = document.getElementById('idGuru');
+        const passwordInput = document.getElementById('password');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const isEditModeInput = document.getElementById('isEditMode');
 
-            const popover = wrapper.querySelector('.pembimbing-popover');
-            const isOpen = popover.classList.contains('show');
+        // Buka Modal
+        addBtn.addEventListener('click', () => {
+            // Reset Form untuk Mode Tambah
+            guruForm.reset();
+            isEditModeInput.value = "false";
+            idGuruInput.readOnly = false; // ID bisa diedit saat tambah baru
+            document.querySelector('.modal-header h3').textContent = "Tambah Guru Baru";
+            fileNameDisplay.style.display = 'none';
+            imagePreviewContainer.style.display = 'none';
+            imagePreview.src = '';
+            modal.classList.add('active');
+        });
 
-            // Tutup semua popover lain yang sedang terbuka
-            document.querySelectorAll('.pembimbing-popover.show').forEach(p => {
-                p.classList.remove('show');
-            });
-
-            if (!isOpen) {
-                popover.classList.add('show');
-            }
+        // Tutup Modal
+        function closeModal() {
+            modal.classList.remove('active');
+            guruForm.reset();
+            fileNameDisplay.style.display = 'none';
+            imagePreviewContainer.style.display = 'none';
+            imagePreview.src = '';
+            isEditModeInput.value = "false";
+            idGuruInput.readOnly = false;
         }
 
-        // Tutup popover jika klik di luar area tombol/popover
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.menu-icon-btn-popover-wrapper')) {
-                document.querySelectorAll('.pembimbing-popover.show').forEach(p => {
-                    p.classList.remove('show');
-                });
+        closeSpan.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // --- Logika Modal Error ---
+        const errorModal = document.getElementById('errorModal');
+        const errorMessageEl = document.getElementById('errorMessage');
+
+        function showError(message) {
+            errorMessageEl.textContent = message;
+            errorModal.classList.add('active');
+        }
+
+        window.closeErrorModal = function() {
+            errorModal.classList.remove('active');
+        }
+
+        // Tampil Nama File
+        photoInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                fileNameDisplay.textContent = 'File terpilih: ' + this.files[0].name;
+                fileNameDisplay.style.display = 'block';
+
+                // Pratinjau Gambar
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreviewContainer.style.display = 'block';
+                }
+                reader.readAsDataURL(this.files[0]);
             }
         });
 
+        // --- Bikin ID Guru Otomatis ---
+        // Format: ID-[NIP]-[4 Acak].[Urutan]
+        async function generateIdGuru() {
+            const nip = nipInput.value.trim();
+            if (!nip) return; // Jangan generate jika NIP kosong
 
-        // --- Supabase Integration for Navbar ---
-        const supabaseUrl = 'https://mjvobqfcoutazqcovtlp.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qdm9icWZjb3V0YXpxY292dGxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzEwMzYsImV4cCI6MjA4NjE0NzAzNn0.jz6JaC9mMTMhLVhXSh1OCnFWDPZ0Cy2tUnHEmWxAR8o';
+            try {
+                // Ambil jumlah data guru untuk menentukan nomor urut
+                // Menggunakan tabel 'dataguru'
+                const { count, error } = await supabaseClient
+                    .from('dataguru')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (error) throw error;
+
+                const sequence = (count || 0) + 1;
+                const random4 = Math.floor(1000 + Math.random() * 9000); // 4 angka random
+                
+                idGuruInput.value = `ID-${nip}-${random4}.${sequence}`;
+            } catch (err) {
+                console.error('Gagal generate ID Guru:', err);
+            }
+        }
         
-        // --- Supabase Integration for Absensi ---
-        const absensiUrl = 'https://ctbskvysuqecnaopqlam.supabase.co';
-        const absensiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN0YnNrdnlzdXFlY25hb3BxbGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5NTAwODksImV4cCI6MjA4NjUyNjA4OX0.npr4SV6s8XFxXek0R0jNvdhlnIZrdTqrNvWGYVtMAcY';
+        // Generate pas NIP kelar diketik
+        nipInput.addEventListener('blur', generateIdGuru);
 
-        if (typeof supabase !== 'undefined') {
-            const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
-            const absensiClient = supabase.createClient(absensiUrl, absensiKey);
+        // Otomatis isi password dengan NIP saat mengetik
+        nipInput.addEventListener('input', function() {
+            passwordInput.value = this.value;
+        });
 
-            async function loadSchoolIdentity() {
+        // Simpen data guru global biar gampang diedit
+        let allGuruData = [];
+
+        // --- Muat Data Guru ---
+        async function loadGuruData() {
+            const tableBody = document.querySelector('.custom-table tbody');
+            tableBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Memuat data...</td></tr>';
+
+            try {
+                // Ambil semua data per 1000 baris sampai habis (tanpa batas jumlah)
+                const PAGE_SIZE = 1000;
+                let data = [];
+                let from = 0;
+                while (true) {
+                    const { data: chunk, error: chunkError } = await supabaseClient
+                        .from('dataguru')
+                        .select('id_guru, nama_guru, nip::text, mapel, tlp, photo, password')
+                        .order('nama_guru', { ascending: true })
+                        .order('id_guru', { ascending: true })
+                        .range(from, from + PAGE_SIZE - 1);
+
+                    if (chunkError) throw chunkError;
+                    data = data.concat(chunk || []);
+                    if (!chunk || chunk.length < PAGE_SIZE) break;
+                    from += PAGE_SIZE;
+                }
+
+                allGuruData = data; // Simpan data ke variabel global
+                tableBody.innerHTML = '';
+                console.log('Total data guru dimuat:', data.length);
+
+                if (!data || data.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #888; padding: 20px;">Belum ada data guru.</td></tr>';
+                    return;
+                }
+
+                data.forEach((guru) => {
+                    const row = document.createElement('tr');
+                    const photoHtml = guru.photo 
+                        ? `<img src="${guru.photo}" alt="${guru.nama_guru}" class="guru-photo">` 
+                        : `<div style="width:40px;height:40px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;color:#94a3b8;border:1px solid #ddd;"><i class="fas fa-user"></i></div>`;
+
+                    row.innerHTML = `
+                        <td>${guru.id_guru}</td>
+                        <td>${guru.nama_guru}</td>
+                        <td>${guru.nip || '-'}</td>
+                        <td>${guru.mapel || '-'}</td>
+                        <td>${guru.tlp || '-'}</td>
+                        <td>${photoHtml}</td>
+                        <td>
+                            <button onclick="editGuru('${guru.id_guru}')" style="background:none; border:none; color:#60a5fa; cursor:pointer;" title="Edit"><i class="fas fa-edit"></i></button>
+                            <button onclick="deleteGuru('${guru.id_guru}', '${guru.photo || ''}')" style="background:none; border:none; color:#f87171; cursor:pointer; margin-left:10px;" title="Hapus"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (err) {
+                console.error('Error loading guru data:', err);
+                tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: #ef4444;">Gagal memuat data: ${err.message}</td></tr>`;
+            }
+        }
+
+        // --- Edit Guru ---
+        window.editGuru = function(id) {
+            const guru = allGuruData.find(g => g.id_guru === id);
+            if (guru) {
+                // Isi form pake data yg dipilih
+                idGuruInput.value = guru.id_guru;
+                idGuruInput.readOnly = true; // ID gak boleh diubah pas edit
+                document.getElementById('namaGuru').value = guru.nama_guru;
+                document.getElementById('nip').value = guru.nip;
+                passwordInput.value = guru.password || '';
+                document.getElementById('mapel').value = guru.mapel;
+                document.getElementById('telepon').value = guru.tlp;
+
+                // Tampil preview foto kalo ada
+                if (guru.photo) {
+                    imagePreview.src = guru.photo;
+                    imagePreviewContainer.style.display = 'block';
+                    fileNameDisplay.textContent = 'Foto saat ini tersimpan';
+                    fileNameDisplay.style.display = 'block';
+                } else {
+                    imagePreview.src = '';
+                    imagePreviewContainer.style.display = 'none';
+                    fileNameDisplay.style.display = 'none';
+                }
+
+                // Set Mode Edit
+                isEditModeInput.value = "true";
+                document.querySelector('.modal-header h3').textContent = "Edit Data Guru";
+                
+                // Buka Modal
+                modal.classList.add('active');
+            }
+        }
+
+        // --- Hapus Guru ---
+        window.deleteGuru = async function(id, photoUrl) {
+            if (confirm(`Apakah Anda yakin ingin menghapus data guru dengan ID: ${id}?`)) {
                 try {
-                    const { data, error } = await supabaseClient
-                        .from('identitassekolah')
-                        .select('nama_sekolah, logo')
-                        .limit(1)
-                        .single();
-                    
-                    if (data) {
-                        if (data.nama_sekolah) {
-                            document.querySelector('.navbar-brand span').textContent = data.nama_sekolah;
-                        }
-                        if (data.logo) {
-                            const img = document.querySelector('.navbar-brand img');
-                            img.src = data.logo;
-                            img.style.display = 'block';
+                    // 1. Hapus Foto dari Storage kalo ada
+                    if (photoUrl) {
+                        try {
+                            // Ambil nama file dari URL
+                            const path = photoUrl.split('/aset/')[1];
+                            if (path) {
+                                const fileName = decodeURIComponent(path);
+                                const { error: storageError } = await supabaseClient.storage
+                                    .from('aset')
+                                    .remove([fileName]);
+                                if (storageError) console.warn('Gagal menghapus file dari storage:', storageError);
+                            }
+                        } catch (storageErr) {
+                            console.warn('Error parsing photo URL:', storageErr);
                         }
                     }
+
+                    // 2. Hapus data dari tabel
+                    const { error } = await supabaseClient
+                        .from('dataguru')
+                        .delete()
+                        .eq('id_guru', id);
+
+                    if (error) throw error;
+
+                    loadGuruData(); // Refresh tabel
                 } catch (err) {
-                    console.error("Error loading school identity:", err);
+                    console.error('Gagal menghapus:', err);
+                    showError('Gagal menghapus data: ' + err.message);
                 }
             }
+        }
 
-            async function loadDashboardStats() {
-                try {
-                    // 1. Siswa Aktif (dari SIMPedik - datasiswa)
-                    const { count: siswaCount, error: siswaError } = await supabaseClient
-                        .from('datasiswa')
-                        .select('*', { count: 'exact', head: true });
-                    
-                    if (!siswaError) {
-                        document.getElementById('totalSiswa').textContent = (siswaCount || 0).toLocaleString();
-                    }
+        // Simpan Data Guru
+        guruForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = guruForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = 'Menyimpan...';
+            submitBtn.disabled = true;
 
-                    // 2. Load Rombel Data
-                    const { data: rombelData, error: rombelError } = await supabaseClient
-                        .from('rombel')
-                        .select('*')
-                        .order('nama_kelas', { ascending: true });
+            try {
+                const isEdit = isEditModeInput.value === "true";
+                const nipVal = document.getElementById('nip').value.trim();
+                const tlpVal = document.getElementById('telepon').value.trim();
 
-                    const tbody = document.getElementById('rombelTableBody');
-                    tbody.innerHTML = '';
-
-                    if (rombelError) throw rombelError;
-
-                    if (rombelData && rombelData.length > 0) {
-                        rombelData.forEach((rombel, index) => {
-                            const row = `<tr>
-                                <td>${index + 1}</td>
-                                <td>${rombel.nama_kelas}</td>
-                                <td>${rombel.jumlah_siswa || 0}</td>
-                            </tr>`;
-                            tbody.innerHTML += row;
-                        });
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;">Belum ada data rombel.</td></tr>';
-                    }
-                } catch (err) {
-                    console.error("Error loading dashboard stats:", err);
+                // Cek Input Angka (Hanya jika field diisi)
+                const isNumeric = (str) => /^\d+$/.test(str);
+                if (nipVal && !isNumeric(nipVal)) {
+                    throw new Error("NIP harus berkarakter angka");
                 }
-            }
-
-            let attendanceChartInstance = null;
-
-            async function loadAttendanceChart() {
-                const ctx = document.getElementById('attendanceChart').getContext('2d');
+                if (tlpVal && !isNumeric(tlpVal)) {
+                    throw new Error("Nomor Telepon harus berkarakter angka");
+                }
                 
-                // Semester Genap: Jan - Jun
-                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni'];
-                const currentYear = new Date().getFullYear();
+                // 1. Upload Foto ke 'aset'
+                let photoUrl = isEdit ? (imagePreview.src || null) : null; 
+                const file = photoInput.files[0];
                 
-                // Inisialisasi data statistik
-                const stats = {
-                    Hadir: [0, 0, 0, 0, 0, 0],
-                    Sakit: [0, 0, 0, 0, 0, 0],
-                    Ijin: [0, 0, 0, 0, 0, 0],
-                    Alpa: [0, 0, 0, 0, 0, 0]
+                if (file) {
+                    const fileExt = file.name.split('.').pop();
+                    // Nama file unik
+                    const fileName = `guru_${idGuruInput.value.replace(/[^a-zA-Z0-9]/g, '')}_${Date.now()}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabaseClient.storage
+                        .from('aset')
+                        .upload(fileName, file);
+                        
+                    if (uploadError) throw new Error('Gagal upload foto: ' + uploadError.message);
+                    
+                    const { data } = supabaseClient.storage.from('aset').getPublicUrl(fileName);
+                    photoUrl = data.publicUrl;
+                }
+
+                // 2. Siapin Data
+                const guruData = {
+                    id_guru: idGuruInput.value.trim(),
+                    nama_guru: document.getElementById('namaGuru').value.trim(),
+                    nip: nipVal || null,
+                    mapel: document.getElementById('mapel').value.trim() || null,
+                    tlp: tlpVal || null,
+                    photo: photoUrl,
+                    password: passwordInput.value.trim() || null
                 };
 
-                try {
-                    // Ambil data dari tabel absensiswa untuk periode Jan-Jun tahun ini
-                    const startDate = `${currentYear}-01-01`;
-                    const endDate = `${currentYear}-06-30`;
-                    
-                    const { data, error } = await absensiClient
-                        .from('absensiswa')
-                        .select('tanggal, status_kehadiran')
-                        .gte('tanggal', startDate)
-                        .lte('tanggal', endDate);
-                        
-                    if (error) throw error;
-                    
-                    if (data) {
-                        data.forEach(item => {
-                            const date = new Date(item.tanggal);
-                            const monthIndex = date.getMonth(); // 0 = Jan, 5 = Jun
-                            
-                            if (monthIndex >= 0 && monthIndex <= 5) {
-                                const status = item.status_kehadiran;
-                                
-                                // Mapping status absensiswa ke kategori chart
-                                if (status === 'Hadir') {
-                                    stats.Hadir[monthIndex]++;
-                                } else if (status === 'Alpa' || status === 'Alpha') {
-                                    stats.Alpa[monthIndex]++;
-                                } else if (status === 'Sakit') {
-                                    stats.Sakit[monthIndex]++;
-                                } else if (status === 'Ijin' || status === 'Izin') {
-                                    stats.Ijin[monthIndex]++;
-                                }
-                            }
-                        });
-                    }
-                    
-                    // Hancurkan chart lama jika ada untuk mencegah glitch/animasi berulang
-                    if (attendanceChartInstance) {
-                        attendanceChartInstance.destroy();
-                    }
-
-                    // Buat Chart
-                    attendanceChartInstance = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: months,
-                            datasets: [
-                                { label: 'Hadir', data: stats.Hadir, backgroundColor: '#2ecc71', borderRadius: 4 }, // Hijau
-                                { label: 'Sakit', data: stats.Sakit, backgroundColor: '#3b82f6', borderRadius: 4 }, // Biru
-                                { label: 'Ijin', data: stats.Ijin, backgroundColor: '#f1c40f', borderRadius: 4 },   // Kuning
-                                { label: 'Alpa', data: stats.Alpa, backgroundColor: '#e74c3c', borderRadius: 4 }    // Merah
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            animation: false, // Matikan animasi agar grafik statis (tidak bergerak)
-                            plugins: {
-                                legend: { position: 'bottom' }
-                            },
-                            scales: {
-                                y: { 
-                                    beginAtZero: true,
-                                    title: { display: true, text: 'Jumlah Siswa' } // Sumbu Kiri (Angka)
-                                },
-                                x: {
-                                    title: { display: true, text: 'Bulan' } // Sumbu Bawah (Bulan)
-                                }
-                            }
-                        }
-                    });
-                } catch (err) {
-                    console.error("Error loading chart data:", err);
-                }
-            }
-
-            async function loadClassAttendanceChart() {
-                const ctx = document.getElementById('classAttendanceChart').getContext('2d');
+                let result;
                 
+                if (isEdit) {
+                    // Update Data
+                    result = await supabaseClient
+                        .from('dataguru')
+                        .update(guruData)
+                        .eq('id_guru', idGuruInput.value);
+                } else {
+                    // Masukin Data Baru
+                    result = await supabaseClient
+                        .from('dataguru')
+                        .insert([guruData]);
+                }
+
+                if (result.error) throw new Error('Gagal menyimpan data: ' + result.error.message);
+
+                alert('Data Guru berhasil disimpan!');
+                closeModal();
+                loadGuruData(); // Refresh tabel data
+                
+            } catch (err) {
+                console.error(err);
+                showError(err.message);
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+
+        // --- Export PDF ---
+        document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.getWidth();
+            let yPos = 20;
+
+            // Tambah KOP Sekolah kalo ada
+            if (schoolData.kop_sekolah) {
                 try {
-                    // 1. Ambil semua kelas dari tabel rombel (SIMPedik) agar semua tampil
-                    const { data: rombelData, error: rombelError } = await supabaseClient
-                        .from('rombel')
-                        .select('nama_kelas')
-                        .order('nama_kelas');
-
-                    if (rombelError) throw rombelError;
-
-                    // Inisialisasi statistik untuk semua kelas
-                    const classStats = {};
-                    if (rombelData) {
-                        rombelData.forEach(r => {
-                            classStats[r.nama_kelas] = { total: 0, hadir: 0 };
-                        });
-                    }
-
-                    // 2. Ambil data absensi bulan ini
-                    const now = new Date();
-                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-                    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
-
-                    const { data, error } = await absensiClient
-                        .from('absensiswa')
-                        .select('kelas, status_kehadiran')
-                        .gte('tanggal', startOfMonth)
-                        .lte('tanggal', endOfMonth);
-
-                    if (error) throw error;
-
-                    if (data) {
-                        data.forEach(record => {
-                            const k = record.kelas || 'Tanpa Kelas';
-                            // Jika ada kelas di absensi yang tidak ada di rombel, tetap tambahkan
-                            if (!classStats[k]) classStats[k] = { total: 0, hadir: 0 };
-                            
-                            classStats[k].total++;
-                            if (record.status_kehadiran === 'Hadir') {
-                                classStats[k].hadir++;
-                            }
-                        });
-                    }
-
-                    const labels = Object.keys(classStats).sort();
-                    const percentages = labels.map(k => {
-                        const s = classStats[k];
-                        return s.total > 0 ? Math.round((s.hadir / s.total) * 100) : 0;
+                    const response = await fetch(schoolData.kop_sekolah);
+                    const blob = await response.blob();
+                    const base64data = await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.readAsDataURL(blob);
                     });
 
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: labels,
-                            datasets: [{
-                                label: '% Kehadiran',
-                                data: percentages,
-                                backgroundColor: '#667eea',
-                                borderRadius: 4
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            return context.parsed.y + '% Hadir';
-                                        }
-                                    }
-                                }
-                            },
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    max: 100,
-                                    title: { display: true, text: 'Persentase (%)' }
-                                },
-                                x: {
-                                    ticks: {
-                                        autoSkip: false,
-                                        maxRotation: 90,
-                                        minRotation: 45
-                                    }
-                                }
-                            }
-                        }
-                    });
+                    const imgProps = doc.getImageProperties(base64data);
+                    const pdfWidth = pageWidth - 20; // Margin kiri kanan 10
+                    const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                    
+                    doc.addImage(base64data, 'PNG', 10, 10, pdfWidth, imgHeight);
+                    yPos = 10 + imgHeight + 10; // Update posisi Y di bawah gambar
                 } catch (err) {
-                    console.error("Error loading class chart:", err);
+                    console.error("Gagal memuat KOP Sekolah:", err);
                 }
             }
 
-            async function loadLowestGrades() {
-                const tbody = document.getElementById('lowestGradesTableBody');
-                if (!tbody) return;
+            // Judul Dokumen
+            doc.setFontSize(18);
+            doc.text("Laporan Data Guru", pageWidth / 2, yPos, { align: 'center' });
+            yPos += 8;
+            
+            // Nama Sekolah
+            const schoolName = schoolData.nama_sekolah || document.querySelector('.navbar-brand span').textContent || 'SMK Negeri 1 Muntok';
+            doc.setFontSize(12);
+            doc.setTextColor(100);
+            doc.text(schoolName, pageWidth / 2, yPos, { align: 'center' });
+            yPos += 10;
 
-                try {
-                    // Ambil 5 nilai terendah dari tabel nilaimapel (Project Absensi)
-                    const { data, error } = await absensiClient
-                        .from('nilaimapel')
-                        .select('nama_siswa, kelas, mapel, nr')
-                        .not('nr', 'is', null) // Pastikan nilai tidak null
-                        .order('nr', { ascending: true })
-                        .limit(5);
+            // Siapin Data Tabel
+            const tableRows = [];
+            const rows = document.querySelectorAll('.custom-table tbody tr');
 
-                    if (error) throw error;
-
-                    tbody.innerHTML = '';
-
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            const nilai = parseFloat(item.nr);
-                            let badgeClass = 'bg-success';
-                            if (nilai < 70) badgeClass = 'bg-danger';
-                            else if (nilai < 80) badgeClass = 'bg-warning';
-
-                            const row = `<tr>
-                                <td>${item.nama_siswa || '-'}</td>
-                                <td>${item.kelas || '-'}</td>
-                                <td>${item.mapel || '-'}</td>
-                                <td><span class="badge ${badgeClass}">${item.nr}</span></td>
-                            </tr>`;
-                            tbody.innerHTML += row;
-                        });
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada data nilai rendah.</td></tr>';
-                    }
-                } catch (err) {
-                    console.error("Error loading lowest grades:", err);
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #e74c3c;">Gagal memuat data: ${err.message}</td></tr>`;
+            rows.forEach((row) => {
+                const cells = row.querySelectorAll('td');
+                // Cek baris kosong/loading
+                if (cells.length > 1) {
+                    const rowData = [
+                        cells[0].innerText, // Id Guru
+                        cells[1].innerText, // Nama Guru
+                        cells[2].innerText, // NIP
+                        cells[3].innerText, // Mapel
+                        cells[4].innerText  // Telepon
+                    ];
+                    tableRows.push(rowData);
                 }
-            }
+            });
 
-            async function loadRecentCases() {
-                const tbody = document.getElementById('recentCasesTableBody');
-                if (!tbody) return;
+            // Bikin Tabel PDF
+            doc.autoTable({
+                head: [['ID Guru', 'Nama Guru', 'NIP', 'Mata Pelajaran', 'Telepon']],
+                body: tableRows,
+                startY: yPos,
+                theme: 'grid',
+                styles: { fontSize: 10 },
+                headStyles: { fillColor: [102, 126, 234] } // Warna primary-color
+            });
 
-                try {
-                    const { data, error } = await absensiClient
-                        .from('kasussiswa')
-                        .select('tanggal, nama_siswa, kelas, jenis_kasus')
-                        .order('tanggal', { ascending: false })
-                        .limit(5);
-
-                    if (error) throw error;
-
-                    tbody.innerHTML = '';
-
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            let dateStr = item.tanggal;
-                            if (dateStr) {
-                                const d = new Date(dateStr);
-                                dateStr = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
-                            }
-
-                            const row = `<tr>
-                                <td>${dateStr || '-'}</td>
-                                <td>${item.nama_siswa || '-'}</td>
-                                <td>${item.kelas || '-'}</td>
-                                <td>${item.jenis_kasus || '-'}</td>
-                            </tr>`;
-                            tbody.innerHTML += row;
-                        });
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Tidak ada data kasus terbaru.</td></tr>';
-                    }
-                } catch (err) {
-                    console.error("Error loading recent cases:", err);
-                    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color: #e74c3c;">Gagal memuat data: ${err.message}</td></tr>`;
-                }
-            }
-
-            document.addEventListener('DOMContentLoaded', loadSchoolIdentity);
-            document.addEventListener('DOMContentLoaded', loadDashboardStats);
-            document.addEventListener('DOMContentLoaded', loadAttendanceChart);
-            document.addEventListener('DOMContentLoaded', loadClassAttendanceChart);
-            document.addEventListener('DOMContentLoaded', loadLowestGrades);
-            document.addEventListener('DOMContentLoaded', loadRecentCases);
-        }
-
-        // --- Date Display in Navbar ---
-        function updateNavbarDate() {
-            const now = new Date();
-            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-            document.getElementById('navbarDate').textContent = now.toLocaleDateString('id-ID', options);
-
-            // Update Chart Title Month
-            const monthName = now.toLocaleDateString('id-ID', { month: 'long' });
-            if (document.getElementById('chartMonthLabel')) {
-                document.getElementById('chartMonthLabel').textContent = monthName;
-            }
-        }
-        document.addEventListener('DOMContentLoaded', updateNavbarDate);
-
-
-        // --- Chart.js Initialization ---
-        
+            // Simpan File
+            doc.save('Data_Guru.pdf');
+        });
     </script>
 </body>
 </html>
