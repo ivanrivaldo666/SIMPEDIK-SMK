@@ -590,6 +590,7 @@
         const savedLogoContainer = document.getElementById('savedLogoContainer');
         const savedLogo = document.getElementById('savedLogo');
         let currentLogoUrl = ''; // Menyimpan URL logo yang ada di database
+        let currentNpsn = null; // NPSN baris yang ada di database (tabel hanya boleh berisi 1 data)
         
         // DOM Elements for KOP
         const kopInput = document.getElementById('kop_sekolah');
@@ -789,13 +790,35 @@
                 
                 // 2. Simpan data ke tabel 'identitassekolah'
                 const formData = getFormData(logoUrl, kopUrl);
-                const { data, error } = await supabaseClient
+                // Cek apakah tabel sudah punya data (hanya boleh 1 baris)
+                const { data: existing, error: checkError } = await supabaseClient
                     .from('identitassekolah')
-                    .upsert([formData]);
+                    .select('npsn')
+                    .limit(1)
+                    .maybeSingle();
+                
+                if (checkError) {
+                    throw checkError;
+                }
+                
+                let error;
+                if (existing) {
+                    // Sudah ada data -> UPDATE baris yang sama (NPSN boleh diganti)
+                    ({ error } = await supabaseClient
+                        .from('identitassekolah')
+                        .update(formData)
+                        .eq('npsn', existing.npsn));
+                } else {
+                    // Tabel masih kosong -> INSERT data pertama
+                    ({ error } = await supabaseClient
+                        .from('identitassekolah')
+                        .insert([formData]));
+                }
                 
                 if (error) {
                     throw error;
                 }
+                currentNpsn = formData.npsn;
                 
                 // 3. Tampilkan pesan sukses
                 showMessage('Data identitas sekolah anda berhasil disimpan', 'success');
@@ -835,6 +858,7 @@
                     .single();
                 
                 if (data) {
+                    currentNpsn = data.npsn;
                     document.getElementById('npsn').value = data.npsn;
                     document.getElementById('nama_sekolah').value = data.nama_sekolah;
                     document.getElementById('status').value = data.status;
@@ -950,7 +974,7 @@
 
         // Fungsi untuk menghapus data (Reset)
         async function deleteData() {
-            const npsn = document.getElementById('npsn').value;
+            const npsn = currentNpsn || document.getElementById('npsn').value;
             
             if (!npsn) {
                 showMessage('Tidak ada data NPSN untuk dihapus.', 'error');
@@ -1004,6 +1028,7 @@
                     showMessage('Data berhasil dihapus dari database.', 'success');
                     currentLogoUrl = ''; // Reset variabel logo
                     currentKopUrl = ''; // Reset variabel kop
+                    currentNpsn = null;
                     resetForm(); // Bersihkan form setelah dihapus
                 } catch (error) {
                     console.error('Error deleting data:', error);
