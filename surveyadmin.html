@@ -357,7 +357,86 @@
         .pq-btn-danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; padding: 7px 12px; font-size: 0.8rem; }
         .pq-btn-danger:hover:not(:disabled) { background: #c0392b; color: #fff; }
         .pq-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
-    </style>
+    
+        /* =========================================================
+           Tata letak simetris: satu sistem kolom untuk header, kartu statistik dan grafik,
+           sehingga tepi kiri/kanan semua elemen sejajar dengan kontainer halaman.
+           ========================================================= */
+        :root { --page-pad: 2rem; --gap: 20px; }
+
+        .navbar { padding-left: var(--page-pad); padding-right: var(--page-pad); }
+        .main-content { padding: var(--page-pad); }
+        .main-content > * { max-width: 100%; }
+
+        .header-stats-grid, .stats-grid, .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: var(--gap);
+            margin-bottom: var(--gap);
+        }
+        .header-stats-grid > *, .stats-grid > *, .charts-grid > * { min-width: 0; }
+
+        @media (min-width: 640px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid { grid-template-columns: repeat(2, 1fr); }
+            .charts-grid > .chart-card:first-child { grid-column: 1 / -1 !important; }
+        }
+        @media (min-width: 1100px) {
+            .header-stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .header-stats-grid > .dashboard-card:first-child { grid-column: span 3; }
+            .stats-grid { grid-template-columns: repeat(4, 1fr); }
+            .charts-grid { grid-template-columns: repeat(4, 1fr); }
+            .charts-grid > .chart-card:first-child { grid-column: span 2 !important; }
+            .charts-grid > .chart-card:not(:first-child) { grid-column: span 1; }
+        }
+        @media (min-width: 640px) and (max-width: 1099px) {
+            .header-stats-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Kartu "Total Responden" di header bergaya sama dengan kartu statistik lain */
+        .header-stats-grid > .stat-card { height: 100%; }
+
+        /* Tombol aksi: lebar sama, isi rata tengah, memenuhi lebar kontainer */
+        .header-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 100%;
+            margin-top: 16px;
+        }
+        .header-actions > button {
+            width: 100%;
+            justify-content: center;
+            text-align: center;
+        }
+        /* jumlah tombol ganjil di 2 kolom: tombol terakhir memenuhi baris agar tetap simetris */
+        .header-actions > button:last-child:nth-child(odd) { grid-column: 1 / -1; }
+        @media (min-width: 860px) {
+            .header-actions { grid-template-columns: repeat(5, 1fr); }
+            .header-actions > button:last-child:nth-child(odd) { grid-column: auto; }
+        }
+
+        @media (max-width: 639px) {
+            .charts-grid > .chart-card { grid-column: 1 / -1 !important; }
+        }
+
+        @media (max-width: 639px) {
+            .table-toolbar input, .table-toolbar select { width: 100%; flex: 1 1 100%; }
+        }
+
+        /* Grafik: tinggi seragam, dan selalu di dalam kartu */
+        .chart-container, .chart-container.small { height: 300px; min-width: 0; }
+        .chart-card { overflow: hidden; }
+
+        /* Tabel: kolom angka/aksi rata tengah, judul kolom mengikuti */
+        #responseTableBody td:nth-child(n+4),
+        .table-card:has(#responseTableBody) thead th:nth-child(n+4) { text-align: center; }
+
+        @media (max-width: 768px) {
+            :root { --page-pad: 12px; --gap: 14px; }
+            .main-content { padding-left: var(--page-pad); padding-right: var(--page-pad); }
+        }
+</style>
 </head>
 <body>
 
@@ -382,12 +461,12 @@
 
         <div class="header-stats-grid">
             <div class="dashboard-card">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; flex-direction: column; align-items: stretch; gap: 0;">
                     <div>
                         <h2><i class="fas fa-poll" style="color: var(--primary-color);"></i> Hasil Survey Kepuasan Layanan Sekolah</h2>
                         <p style="color: #666; margin-top: 10px;">Rekap jawaban survey yang diisi oleh orang tua/wali, siswa, guru, dan staf melalui formulir survey online.</p>
                     </div>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div class="header-actions">
                         <button id="btnUnduhPoster" class="btn-link" style="border: none; cursor: pointer; font-size: 0.9rem; padding: 10px 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; background: linear-gradient(135deg, #667eea, #764ba2);">
                             <i class="fas fa-image"></i> Unduh Poster
                         </button>
@@ -396,6 +475,9 @@
                         </button>
                         <button id="btnBuatPertanyaan" class="btn-link" style="border: none; cursor: pointer; font-size: 0.9rem; padding: 10px 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; background-color: #e67e22;">
                             <i class="fas fa-plus-circle"></i> Buat Pertanyaan
+                        </button>
+                        <button id="btnResetJawaban" class="btn-link" style="border: none; cursor: pointer; font-size: 0.9rem; padding: 10px 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; background-color: #c0392b;">
+                            <i class="fas fa-trash-alt"></i> Reset Jawaban
                         </button>
                         <button id="btnKirimLink" class="btn-link" style="border: none; cursor: pointer; font-size: 0.9rem; padding: 10px 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
                             <i class="fas fa-paper-plane"></i> Kirim Link Survey
@@ -1642,6 +1724,57 @@
             document.getElementById('pqClose').addEventListener('click', tutupModalPertanyaan);
             document.getElementById('pqBatal').addEventListener('click', tutupModalPertanyaan);
             pqModal.addEventListener('click', (e) => { if (e.target === pqModal) tutupModalPertanyaan(); });
+
+            // --- Reset Jawaban: hapus SEMUA baris di tabel survey_responses ---
+            const btnResetJawaban = document.getElementById('btnResetJawaban');
+            btnResetJawaban.addEventListener('click', async () => {
+                if (!allResponses.length) {
+                    alert('Tidak ada jawaban responden untuk direset.');
+                    return;
+                }
+
+                const ok = confirm(
+                    'PERINGATAN: seluruh ' + allResponses.length + ' jawaban responden di tabel survey_responses akan DIHAPUS PERMANEN.\n\n' +
+                    'Data yang sudah dihapus tidak bisa dikembalikan. Disarankan klik "Unduh Laporan" dulu untuk menyimpan arsip.\n' +
+                    'Pertanyaan survey (survey_questions) tidak ikut terhapus.\n\nLanjutkan?'
+                );
+                if (!ok) return;
+
+                const ketik = prompt('Ketik RESET (huruf besar) untuk mengonfirmasi penghapusan semua jawaban:');
+                if (ketik === null) return;
+                if (ketik.trim() !== 'RESET') {
+                    alert('Reset dibatalkan: kata konfirmasi tidak sesuai.');
+                    return;
+                }
+
+                const originalHtml = btnResetJawaban.innerHTML;
+                btnResetJawaban.disabled = true;
+                btnResetJawaban.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghapus...';
+                try {
+                    // PostgREST mewajibkan filter pada DELETE; "id bukan null" berlaku untuk semua baris (tipe id apa pun).
+                    // .select('id') mengembalikan baris yang benar-benar terhapus, supaya kegagalan diam-diam (RLS) terdeteksi.
+                    const { data, error } = await surveyClient
+                        .from('survey_responses')
+                        .delete()
+                        .not('id', 'is', null)
+                        .select('id');
+                    if (error) throw error;
+
+                    const terhapus = (data || []).length;
+                    if (terhapus === 0) {
+                        alert('Tidak ada data yang terhapus. Kemungkinan tabel survey_responses belum memiliki policy DELETE untuk role anon di Supabase (Row Level Security).');
+                    } else {
+                        alert(terhapus + ' jawaban responden berhasil dihapus.');
+                    }
+                    await loadSurveyResponses();
+                } catch (err) {
+                    console.error('Gagal reset jawaban:', err);
+                    alert('Gagal menghapus jawaban: ' + (err.message || 'terjadi kesalahan'));
+                } finally {
+                    btnResetJawaban.disabled = false;
+                    btnResetJawaban.innerHTML = originalHtml;
+                }
+            });
 
             document.addEventListener('DOMContentLoaded', loadSchoolIdentity);
             document.addEventListener('DOMContentLoaded', loadSurveyResponses);
