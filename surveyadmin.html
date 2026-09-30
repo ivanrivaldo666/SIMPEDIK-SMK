@@ -323,6 +323,40 @@
         }
         .modal-saran-item .q-text { font-size: 0.8rem; color: #888; margin-bottom: 6px; }
         .modal-saran-item .a-text { font-size: 0.92rem; color: #333; }
+
+        /* --- Modal Kelola Pertanyaan --- */
+        .pq-form-group { margin-bottom: 14px; }
+        .pq-form-group label { display: block; font-size: 0.85rem; font-weight: 600; color: #444; margin-bottom: 6px; }
+        .pq-form-group textarea, .pq-form-group select {
+            width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px;
+            font-family: inherit; font-size: 0.92rem; resize: vertical;
+        }
+        .pq-form-group textarea:focus, .pq-form-group select:focus { outline: none; border-color: var(--primary-color); }
+        .pq-hint { font-size: 0.78rem; color: #888; margin-top: 4px; }
+        .pq-check { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #444; }
+        .pq-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+        .pq-btn { border: none; border-radius: 8px; padding: 10px 18px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .pq-btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+        .pq-btn-primary:disabled { opacity: .6; cursor: wait; }
+        .pq-btn-light { background: #f1f3f5; color: #555; }
+        .pq-msg { font-size: 0.85rem; margin-top: 10px; display: none; }
+        .pq-msg.error { color: #c0392b; display: block; }
+        .pq-msg.ok { color: #27ae60; display: block; }
+        .pq-list { display: flex; flex-direction: column; gap: 10px; }
+        .pq-item { border: 1px solid #eee; border-radius: 8px; padding: 12px 14px; display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+        .pq-item.off { opacity: .55; }
+        .pq-item .pq-q { font-size: 0.92rem; color: #333; margin-bottom: 6px; }
+        .pq-item .pq-meta { font-size: 0.76rem; color: #888; }
+        .pq-tag { display: inline-block; background: #eef0ff; color: var(--primary-color); border-radius: 20px; padding: 2px 9px; font-size: 0.72rem; font-weight: 600; margin-right: 6px; }
+        .pq-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .pq-icon-btn { border: 1px solid #e3e6ea; background: #fff; border-radius: 6px; width: 32px; height: 32px; cursor: pointer; color: #555; }
+        .pq-icon-btn:hover { background: #f4f6f9; }
+        .pq-icon-btn.del:hover { color: #c0392b; border-color: #c0392b; }
+        .pq-list-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 18px 0 10px; }
+        .pq-list-head .modal-section-title { margin: 0; }
+        .pq-btn-danger { background: #fff; color: #c0392b; border: 1px solid #c0392b; padding: 7px 12px; font-size: 0.8rem; }
+        .pq-btn-danger:hover:not(:disabled) { background: #c0392b; color: #fff; }
+        .pq-btn-danger:disabled { opacity: .5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -359,6 +393,9 @@
                         </button>
                         <button id="btnUnduhLaporan" class="btn-link" style="border: none; cursor: pointer; font-size: 0.9rem; padding: 10px 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; background-color: #2ecc71;">
                             <i class="fas fa-file-excel"></i> Unduh Laporan
+                        </button>
+                        <button id="btnBuatPertanyaan" class="btn-link" style="border: none; cursor: pointer; font-size: 0.9rem; padding: 10px 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; background-color: #e67e22;">
+                            <i class="fas fa-plus-circle"></i> Buat Pertanyaan
                         </button>
                         <button id="btnKirimLink" class="btn-link" style="border: none; cursor: pointer; font-size: 0.9rem; padding: 10px 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap;">
                             <i class="fas fa-paper-plane"></i> Kirim Link Survey
@@ -520,6 +557,47 @@
         </div>
     </div>
 
+    <!-- Modal Buat / Kelola Pertanyaan Survey -->
+    <div class="modal-overlay" id="pertanyaanModal">
+        <div class="modal-box">
+            <button class="modal-close" id="pqClose" type="button"><i class="fas fa-times"></i></button>
+            <h2>Buat Pertanyaan Survey</h2>
+            <p class="modal-sub">Semua pertanyaan di halaman survey (pertanyaan.html) diambil dari tabel survey_questions. Pertanyaan baru tampil setelah pertanyaan kepuasan dan sebelum kolom saran &amp; kritik.</p>
+
+            <div class="pq-form-group">
+                <label for="pqTeks">Teks Pertanyaan</label>
+                <textarea id="pqTeks" rows="3" placeholder="Tuliskan pertanyaan di sini..."></textarea>
+            </div>
+            <div class="pq-form-group">
+                <label for="pqTipe">Bentuk Jawaban</label>
+                <select id="pqTipe">
+                    <option value="skala">Skala kepuasan (1&ndash;5)</option>
+                    <option value="pilihan">Pilihan (satu jawaban)</option>
+                    <option value="teks">Isian teks</option>
+                </select>
+            </div>
+            <div class="pq-form-group" id="pqOpsiGroup" style="display:none;">
+                <label for="pqOpsi">Pilihan Jawaban</label>
+                <textarea id="pqOpsi" rows="4" placeholder="Satu pilihan per baris"></textarea>
+                <p class="pq-hint">Tulis satu pilihan per baris, minimal 2 pilihan.</p>
+            </div>
+            <div class="pq-form-group">
+                <label class="pq-check"><input type="checkbox" id="pqWajib" checked> Wajib dijawab</label>
+            </div>
+            <div class="pq-actions">
+                <button type="button" class="pq-btn pq-btn-light" id="pqBatal">Tutup</button>
+                <button type="button" class="pq-btn pq-btn-primary" id="pqSimpan"><i class="fas fa-save"></i> Simpan Pertanyaan</button>
+            </div>
+            <p class="pq-msg" id="pqMsg"></p>
+
+            <div class="pq-list-head">
+                <div class="modal-section-title">Daftar Pertanyaan Survey</div>
+                <button type="button" class="pq-btn pq-btn-danger" id="pqReset"><i class="fas fa-trash-alt"></i> Reset Pertanyaan</button>
+            </div>
+            <div class="pq-list" id="pqList"><p style="color:#888; font-size:0.9rem;">Memuat...</p></div>
+        </div>
+    </div>
+
     <script>
         // --- Tombol Kirim Link Survey ---
         document.getElementById('btnKirimLink').addEventListener('click', function() {
@@ -608,17 +686,101 @@
                 return 'bg-success';
             }
 
+                        // =========================================================
+            // Model jawaban: dibangun dari tabel survey_questions (sumber yang sama dengan pertanyaan.html)
+            // - pertanyaan dengan kolom_jawaban  -> dibaca dari kolom itu (q1, saran2, ...)
+            // - pertanyaan buatan admin          -> dibaca dari JSON jawaban_tambahan[id_pertanyaan]
+            // =========================================================
+            const KAT_URUT = { kepuasan: 0, tambahan: 1, saran: 2 };
+            let surveyItems = [];
+
+            function esc(v) {
+                return String(v == null ? '' : v)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function parseTambahan(row) {
+                let j = row ? row.jawaban_tambahan : null;
+                if (typeof j === 'string') { try { j = JSON.parse(j); } catch (e) { j = null; } }
+                return (j && typeof j === 'object') ? j : {};
+            }
+
+            function getAnswer(row, item) {
+                let v;
+                if (item.col) v = row[item.col];
+                else {
+                    const t = parseTambahan(row)[item.id];
+                    v = t ? t.jawaban : null;
+                }
+                if (v == null || String(v).trim() === '') return null;
+                return v;
+            }
+
+            function toScore(v) {
+                const n = typeof v === 'number' ? v : parseFloat(v);
+                return (isFinite(n) && n >= 1 && n <= 5) ? n : null;
+            }
+
+            function buildItems(questions, responses) {
+                const items = [];
+                const usedCols = new Set();
+                const usedIds = new Set();
+
+                (questions || []).forEach(q => {
+                    usedIds.add(String(q.id));
+                    const base = { text: q.teks_pertanyaan, tipe: q.tipe || 'skala', kategori: q.kategori || 'tambahan' };
+                    if (q.kolom_jawaban) {
+                        usedCols.add(q.kolom_jawaban);
+                        items.push(Object.assign(base, { key: q.kolom_jawaban, col: q.kolom_jawaban }));
+                    } else {
+                        items.push(Object.assign(base, { key: 'custom_' + q.id, id: q.id }));
+                    }
+                });
+
+                // Kolom bawaan yang sudah tidak ada di survey_questions (mis. setelah Reset) tetapi masih punya data
+                const legacy = [];
+                likertQuestions.forEach((t, i) => legacy.push({ key: 'q' + (i + 1), col: 'q' + (i + 1), text: t, tipe: 'skala', kategori: 'kepuasan' }));
+                saranQuestions.forEach(sq => legacy.push({ key: sq.field, col: sq.field, text: sq.text, tipe: 'teks', kategori: 'saran' }));
+                legacy.forEach(l => {
+                    if (usedCols.has(l.col)) return;
+                    if ((responses || []).some(r => r[l.col] != null && String(r[l.col]).trim() !== '')) items.push(l);
+                });
+
+                // Pertanyaan buatan admin yang sudah dihapus tetapi jawabannya masih tersimpan (teks pertanyaan ikut tersimpan)
+                (responses || []).forEach(r => {
+                    const j = parseTambahan(r);
+                    Object.keys(j).forEach(id => {
+                        if (usedIds.has(String(id))) return;
+                        usedIds.add(String(id));
+                        items.push({ key: 'custom_' + id, id: id, text: (j[id] && j[id].pertanyaan) || ('Pertanyaan #' + id),
+                                     tipe: (j[id] && j[id].tipe) || 'teks', kategori: 'tambahan' });
+                    });
+                });
+
+                return items.slice().sort((a, b) => (KAT_URUT[a.kategori] ?? 1) - (KAT_URUT[b.kategori] ?? 1));
+            }
+
+            function scaleItems() { return surveyItems.filter(i => i.tipe === 'skala'); }
+            function choiceItems() { return surveyItems.filter(i => i.tipe === 'pilihan'); }
+            function textItems() { return surveyItems.filter(i => i.tipe === 'teks'); }
+
             function calcAverage(row) {
                 let total = 0, count = 0;
-                for (let i = 1; i <= 15; i++) {
-                    const v = row['q' + i];
-                    if (typeof v === 'number' && !isNaN(v)) {
-                        total += v;
-                        count++;
-                    }
-                }
+                scaleItems().forEach(it => {
+                    const v = toScore(getAnswer(row, it));
+                    if (v !== null) { total += v; count++; }
+                });
                 return count > 0 ? total / count : 0;
             }
+
+            function countSaran(data) {
+                let n = 0;
+                data.forEach(row => textItems().forEach(it => { if (getAnswer(row, it) !== null) n++; }));
+                return n;
+            }
+
+            
 
             function formatDate(value) {
                 if (!value) return '-';
@@ -645,6 +807,15 @@
                     if (error) throw error;
 
                     allResponses = data || [];
+
+                    let questions = [];
+                    try {
+                        const qr = await surveyClient.from('survey_questions').select('*')
+                            .order('urutan', { ascending: true }).order('id', { ascending: true });
+                        if (qr.error) console.warn('survey_questions gagal dimuat:', qr.error.message);
+                        else questions = qr.data || [];
+                    } catch (e) { console.warn('survey_questions gagal dimuat:', e); }
+                    surveyItems = buildItems(questions, allResponses);
 
                     updateStats(allResponses);
                     renderAvgScoreChart(allResponses);
@@ -680,33 +851,20 @@
                 });
                 document.getElementById('topRespondenType').textContent = topType;
 
-                let saranCount = 0;
-                data.forEach(row => {
-                    saranQuestions.forEach(sq => {
-                        if (row[sq.field] && row[sq.field].toString().trim() !== '') saranCount++;
-                    });
-                });
+                const saranCount = countSaran(data);
                 document.getElementById('totalSaran').textContent = saranCount.toLocaleString('id-ID');
             }
 
             let avgScoreChartInstance = null;
             function renderAvgScoreChart(data) {
                 const ctx = document.getElementById('avgScoreChart').getContext('2d');
-                const sums = new Array(15).fill(0);
-                const counts = new Array(15).fill(0);
-
-                data.forEach(row => {
-                    for (let i = 1; i <= 15; i++) {
-                        const v = row['q' + i];
-                        if (typeof v === 'number' && !isNaN(v)) {
-                            sums[i - 1] += v;
-                            counts[i - 1]++;
-                        }
-                    }
+                const scale = scaleItems();
+                const averages = scale.map(it => {
+                    let sum = 0, cnt = 0;
+                    data.forEach(row => { const v = toScore(getAnswer(row, it)); if (v !== null) { sum += v; cnt++; } });
+                    return cnt > 0 ? +(sum / cnt).toFixed(2) : 0;
                 });
-
-                const averages = sums.map((s, i) => counts[i] > 0 ? +(s / counts[i]).toFixed(2) : 0);
-                const labels = likertQuestions.map((q, i) => 'P' + (i + 1));
+                const labels = scale.map((it, i) => 'P' + (i + 1));
 
                 if (avgScoreChartInstance) avgScoreChartInstance.destroy();
                 avgScoreChartInstance = new Chart(ctx, {
@@ -729,7 +887,7 @@
                                 callbacks: {
                                     title: function(items) {
                                         const idx = items[0].dataIndex;
-                                        return likertQuestions[idx];
+                                        return scale[idx] ? scale[idx].text : '';
                                     },
                                     label: function(context) {
                                         return 'Rata-rata: ' + context.parsed.y + ' / 5';
@@ -852,13 +1010,13 @@
                 const rows = [];
 
                 data.forEach(row => {
-                    saranQuestions.forEach(sq => {
-                        const answer = row[sq.field];
-                        if (answer && answer.toString().trim() !== '') {
+                    textItems().forEach(it => {
+                        const answer = getAnswer(row, it);
+                        if (answer !== null) {
                             rows.push({
                                 responden_id: row.responden_id,
                                 jenis_responden: row.jenis_responden,
-                                pertanyaan: sq.text,
+                                pertanyaan: it.text,
                                 jawaban: answer
                             });
                         }
@@ -876,8 +1034,8 @@
                     tr.innerHTML = `
                         <td>${item.responden_id || '-'}</td>
                         <td>${item.jenis_responden || '-'}</td>
-                        <td style="white-space: normal; min-width: 220px;">${item.pertanyaan}</td>
-                        <td style="white-space: normal; min-width: 260px;">${item.jawaban}</td>
+                        <td style="white-space: normal; min-width: 220px;">${esc(item.pertanyaan)}</td>
+                        <td style="white-space: normal; min-width: 260px;">${esc(item.jawaban)}</td>
                     `;
                     tbody.appendChild(tr);
                 });
@@ -933,12 +1091,7 @@
                 Object.keys(typeCounts).forEach(t => {
                     if (typeCounts[t] > topCount) { topCount = typeCounts[t]; topType = t; }
                 });
-                let saranCount = 0;
-                allResponses.forEach(row => {
-                    saranQuestions.forEach(sq => {
-                        if (row[sq.field] && row[sq.field].toString().trim() !== '') saranCount++;
-                    });
-                });
+                const saranCount = countSaran(allResponses);
 
                 const ringkasanRows = [
                     ['RINGKASAN HASIL SURVEY'],
@@ -957,10 +1110,21 @@
                 wsRingkasan['!cols'] = [{ wch: 32 }, { wch: 20 }];
                 XLSX.utils.book_append_sheet(wb, wsRingkasan, 'Ringkasan');
 
-                // --- Sheet 3: Detail Responden ---
+                // --- Sheet 3: Detail Responden (kolom mengikuti pertanyaan di survey_questions) ---
+                const kolomItems = [];
+                let nP = 0, nT = 0, nS = 0;
+                surveyItems.forEach(it => {
+                    let kode;
+                    if (it.tipe === 'skala') kode = 'P' + (++nP);
+                    else if (it.tipe === 'pilihan') kode = 'T' + (++nT);
+                    else kode = 'S' + (++nS);
+                    kolomItems.push(Object.assign({ kode: kode }, it));
+                });
+
                 const detailHeader = ['No', 'ID Responden', 'Jenis Responden', 'Jenis Kelamin', 'Usia', 'Tanggal Mengisi'];
-                for (let i = 1; i <= 15; i++) detailHeader.push('P' + i);
-                detailHeader.push('Rata-rata Skor', 'Saran 1', 'Saran 2', 'Saran 3');
+                kolomItems.filter(k => k.tipe === 'skala').forEach(k => detailHeader.push(k.kode));
+                detailHeader.push('Rata-rata Skor');
+                kolomItems.filter(k => k.tipe !== 'skala').forEach(k => detailHeader.push(k.kode));
 
                 const detailRows = [detailHeader];
                 allResponses.forEach((row, idx) => {
@@ -972,30 +1136,28 @@
                         row.usia != null ? row.usia : '-',
                         formatDate(row.created_at)
                     ];
-                    for (let i = 1; i <= 15; i++) {
-                        const v = row['q' + i];
-                        r.push(typeof v === 'number' && !isNaN(v) ? v : '-');
-                    }
+                    kolomItems.filter(k => k.tipe === 'skala').forEach(k => {
+                        const v = toScore(getAnswer(row, k));
+                        r.push(v !== null ? v : '-');
+                    });
                     r.push(+calcAverage(row).toFixed(2));
-                    r.push(row.saran1 || '');
-                    r.push(row.saran2 || '');
-                    r.push(row.saran3 || '');
+                    kolomItems.filter(k => k.tipe !== 'skala').forEach(k => {
+                        const v = getAnswer(row, k);
+                        r.push(v !== null ? String(v) : '');
+                    });
                     detailRows.push(r);
                 });
 
                 const wsDetail = XLSX.utils.aoa_to_sheet(detailRows);
-                wsDetail['!cols'] = [
-                    { wch: 5 }, { wch: 16 }, { wch: 16 }, { wch: 14 }, { wch: 6 }, { wch: 14 },
-                    ...Array(15).fill({ wch: 6 }),
-                    { wch: 13 }, { wch: 35 }, { wch: 35 }, { wch: 35 }
-                ];
+                wsDetail['!cols'] = detailHeader.map((h, i) => ({ wch: i < 6 ? [5, 16, 16, 14, 6, 14][i] : (/^(S|T)\d+$/.test(h) ? 35 : (h === 'Rata-rata Skor' ? 13 : 6)) }));
                 XLSX.utils.book_append_sheet(wb, wsDetail, 'Detail Responden');
 
-                // --- Sheet 4: Daftar Pertanyaan (keterangan kode P1-P15) ---
-                const pertanyaanRows = [['Kode', 'Pertanyaan']];
-                likertQuestions.forEach((q, i) => pertanyaanRows.push(['P' + (i + 1), q]));
+                // --- Sheet 4: Daftar Pertanyaan (keterangan kode) ---
+                const tipeNama = { skala: 'Skala 1-5', pilihan: 'Pilihan', teks: 'Isian teks' };
+                const pertanyaanRows = [['Kode', 'Jenis', 'Pertanyaan']];
+                kolomItems.forEach(k => pertanyaanRows.push([k.kode, tipeNama[k.tipe] || k.tipe, k.text]));
                 const wsPertanyaan = XLSX.utils.aoa_to_sheet(pertanyaanRows);
-                wsPertanyaan['!cols'] = [{ wch: 8 }, { wch: 75 }];
+                wsPertanyaan['!cols'] = [{ wch: 8 }, { wch: 12 }, { wch: 75 }];
                 XLSX.utils.book_append_sheet(wb, wsPertanyaan, 'Daftar Pertanyaan');
 
                 const namaFileSekolah = (schoolIdentityFull.nama_sekolah || 'Sekolah').replace(/[^a-zA-Z0-9]+/g, '_');
@@ -1015,12 +1177,31 @@
                 { title: 'Keadilan & Kenyamanan', emoji: '❤️', qs: [13, 14, 15] }
             ];
 
-            function categoryAverage(qs) {
+            // Kategori poster dibangun dari pertanyaan skala yang benar-benar ada
+            function buildPosterCategories() {
+                const scale = scaleItems();
+                const byKey = {};
+                scale.forEach(it => { byKey[it.key] = it; });
+                const used = new Set();
+                const cats = [];
+                posterCategories.forEach(c => {
+                    const its = c.qs.map(i => byKey['q' + i]).filter(Boolean);
+                    if (its.length) { cats.push({ title: c.title, emoji: c.emoji, items: its }); its.forEach(i => used.add(i.key)); }
+                });
+                const rest = scale.filter(it => !used.has(it.key));
+                if (rest.length) {
+                    if (cats.length) cats.push({ title: 'Pertanyaan Tambahan', emoji: '📌', items: rest });
+                    else rest.forEach(it => cats.push({ title: it.text.length > 70 ? it.text.slice(0, 67) + '...' : it.text, emoji: '📌', items: [it] }));
+                }
+                return cats;
+            }
+
+            function categoryAverage(items) {
                 let total = 0, count = 0;
                 allResponses.forEach(row => {
-                    qs.forEach(i => {
-                        const v = row['q' + i];
-                        if (typeof v === 'number' && !isNaN(v)) { total += v; count++; }
+                    items.forEach(it => {
+                        const v = toScore(getAnswer(row, it));
+                        if (v !== null) { total += v; count++; }
                     });
                 });
                 return count > 0 ? total / count : 0;
@@ -1044,6 +1225,11 @@
                     return;
                 }
 
+                if (scaleItems().length === 0) {
+                    alert('Belum ada pertanyaan skala yang bisa dibuatkan poster.');
+                    return;
+                }
+
                 const originalBtnHtml = btn.innerHTML;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat poster...';
                 btn.disabled = true;
@@ -1054,15 +1240,10 @@
                     const totalResponden = allResponses.length;
                     const overallAvg = allResponses.reduce((sum, r) => sum + calcAverage(r), 0) / totalResponden;
                     const satisfactionPercent = Math.round((overallAvg / 5) * 100);
-                    let saranCount = 0;
-                    allResponses.forEach(row => {
-                        saranQuestions.forEach(sq => {
-                            if (row[sq.field] && row[sq.field].toString().trim() !== '') saranCount++;
-                        });
-                    });
+                    const saranCount = countSaran(allResponses);
 
-                    const catData = posterCategories.map(cat => {
-                        const avg = categoryAverage(cat.qs);
+                    const catData = buildPosterCategories().map(cat => {
+                        const avg = categoryAverage(cat.items);
                         return Object.assign({}, cat, { avg: avg, color: posterScoreColor(avg) });
                     });
                     let lowestIdx = 0, highestIdx = 0;
@@ -1108,7 +1289,7 @@
                                 <div style="font-size:15px; color:#333; font-weight:600;">Hasil Survey Kepuasan Layanan Milik</div>
                                 <div style="font-size:27px; font-weight:800; color:#3949ab; margin:2px 0 14px;">${namaSekolah}</div>
                                 <p style="font-size:13.5px; color:#555; line-height:1.65; margin-bottom:10px;">
-                                    Survey kepuasan layanan sekolah ini diisi oleh <b>${totalResponden} responden</b> yang terdiri dari orang tua/wali, siswa, guru, dan staf sekolah, mencakup 15 pertanyaan seputar kualitas pelayanan. Berikut rangkuman hasilnya.
+                                    Survey kepuasan layanan sekolah ini diisi oleh <b>${totalResponden} responden</b> yang terdiri dari orang tua/wali, siswa, guru, dan staf sekolah, mencakup ${scaleItems().length} pertanyaan seputar kualitas pelayanan. Berikut rangkuman hasilnya.
                                 </p>
                             </div>
 
@@ -1195,29 +1376,40 @@
 
                 const qaList = document.getElementById('modalQaList');
                 qaList.innerHTML = '';
-                for (let i = 1; i <= 15; i++) {
-                    const score = row['q' + i];
-                    const badgeClass = typeof score === 'number' ? getScoreBadgeClass(score) : 'bg-warning';
-                    const label = typeof score === 'number' && score >= 1 && score <= 5 ? scaleLabels[score - 1] : '-';
+                let nomor = 0, adaJawaban = false;
+                surveyItems.filter(it => it.tipe !== 'teks').forEach(it => {
+                    const raw = getAnswer(row, it);
+                    if (raw === null) return;
+                    adaJawaban = true;
+                    nomor++;
+                    let badgeHtml;
+                    if (it.tipe === 'skala') {
+                        const score = toScore(raw);
+                        const badgeClass = score !== null ? getScoreBadgeClass(score) : 'bg-warning';
+                        const label = score !== null ? scaleLabels[Math.round(score) - 1] : '-';
+                        badgeHtml = `<span class="badge ${badgeClass}" style="white-space: nowrap;">${score !== null ? score : esc(raw)} (${esc(label)})</span>`;
+                    } else {
+                        badgeHtml = `<span class="badge" style="white-space: normal; background:#667eea; color:#fff;">${esc(raw)}</span>`;
+                    }
                     const item = document.createElement('div');
                     item.className = 'modal-qa-item';
-                    item.innerHTML = `
-                        <span class="q-text">${i}. ${likertQuestions[i - 1]}</span>
-                        <span class="badge ${badgeClass}" style="white-space: nowrap;">${score != null ? score : '-'} (${label})</span>
-                    `;
+                    item.innerHTML = `<span class="q-text">${nomor}. ${esc(it.text)}</span>${badgeHtml}`;
                     qaList.appendChild(item);
+                });
+                if (!adaJawaban) {
+                    qaList.innerHTML = '<p style="color:#888; font-size:0.9rem;">Tidak ada jawaban pertanyaan pilihan/skala dari responden ini.</p>';
                 }
 
                 const saranList = document.getElementById('modalSaranList');
                 saranList.innerHTML = '';
                 let hasSaran = false;
-                saranQuestions.forEach(sq => {
-                    const answer = row[sq.field];
-                    if (answer && answer.toString().trim() !== '') {
+                textItems().forEach(it => {
+                    const answer = getAnswer(row, it);
+                    if (answer !== null) {
                         hasSaran = true;
                         const item = document.createElement('div');
                         item.className = 'modal-saran-item';
-                        item.innerHTML = `<div class="q-text">${sq.text}</div><div class="a-text">${answer}</div>`;
+                        item.innerHTML = `<div class="q-text">${esc(it.text)}</div><div class="a-text">${esc(answer)}</div>`;
                         saranList.appendChild(item);
                     }
                 });
@@ -1239,6 +1431,217 @@
             document.getElementById('searchInput').addEventListener('input', () => renderResponseTable());
             document.getElementById('filterJenis').addEventListener('change', () => renderResponseTable());
             document.getElementById('filterKelamin').addEventListener('change', () => renderResponseTable());
+
+            // =========================================================
+            // Buat / Kelola Pertanyaan Survey (tabel: survey_questions)
+            // =========================================================
+            const pqModal = document.getElementById('pertanyaanModal');
+            const pqTeks = document.getElementById('pqTeks');
+            const pqTipe = document.getElementById('pqTipe');
+            const pqOpsi = document.getElementById('pqOpsi');
+            const pqOpsiGroup = document.getElementById('pqOpsiGroup');
+            const pqWajib = document.getElementById('pqWajib');
+            const pqSimpan = document.getElementById('pqSimpan');
+            const pqMsg = document.getElementById('pqMsg');
+            const pqList = document.getElementById('pqList');
+            let pqData = [];
+
+            const pqTipeLabel = { skala: 'Skala 1-5', pilihan: 'Pilihan', teks: 'Isian teks' };
+            const pqKategoriLabel = { kepuasan: 'Kepuasan', tambahan: 'Tambahan', saran: 'Saran' };
+            const pqKategoriUrut = { kepuasan: 0, tambahan: 1, saran: 2 };
+
+            function pqEsc(str) {
+                return String(str == null ? '' : str)
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+            }
+
+            function pqSetMsg(text, type) {
+                pqMsg.textContent = text || '';
+                pqMsg.className = 'pq-msg' + (text ? ' ' + type : '');
+            }
+
+            function pqToggleOpsi() {
+                pqOpsiGroup.style.display = pqTipe.value === 'pilihan' ? 'block' : 'none';
+            }
+
+            function pqResetForm() {
+                pqTeks.value = '';
+                pqOpsi.value = '';
+                pqTipe.value = 'skala';
+                pqWajib.checked = true;
+                pqToggleOpsi();
+            }
+
+            function renderPertanyaanList() {
+                if (!pqData.length) {
+                    pqList.innerHTML = '<p style="color:#888; font-size:0.9rem;">Belum ada pertanyaan tambahan.</p>';
+                    return;
+                }
+                pqList.innerHTML = '';
+                pqData.forEach((q, idx) => {
+                    const opsi = Array.isArray(q.opsi) ? q.opsi : [];
+                    const item = document.createElement('div');
+                    item.className = 'pq-item' + (q.aktif ? '' : ' off');
+                    item.innerHTML = `
+                        <div>
+                            <div class="pq-q">${idx + 1}. ${pqEsc(q.teks_pertanyaan)}</div>
+                            <div class="pq-meta">
+                                <span class="pq-tag">${pqKategoriLabel[q.kategori] || 'Tambahan'}</span>
+                                <span class="pq-tag">${pqTipeLabel[q.tipe] || pqEsc(q.tipe)}</span>
+                                ${q.wajib ? 'Wajib' : 'Opsional'} &middot; ${q.aktif ? 'Ditampilkan' : 'Disembunyikan'}
+                                ${q.tipe === 'pilihan' && opsi.length ? '<br>Pilihan: ' + opsi.map(pqEsc).join(' / ') : ''}
+                            </div>
+                        </div>
+                        <div class="pq-item-actions">
+                            <button type="button" class="pq-icon-btn" data-act="toggle" data-id="${q.id}" title="${q.aktif ? 'Sembunyikan' : 'Tampilkan'}"><i class="fas ${q.aktif ? 'fa-eye-slash' : 'fa-eye'}"></i></button>
+                            <button type="button" class="pq-icon-btn del" data-act="hapus" data-id="${q.id}" title="Hapus"><i class="fas fa-trash"></i></button>
+                        </div>`;
+                    pqList.appendChild(item);
+                });
+            }
+
+            async function loadPertanyaanAdmin() {
+                pqList.innerHTML = '<p style="color:#888; font-size:0.9rem;">Memuat...</p>';
+                try {
+                    const { data, error } = await surveyClient
+                        .from('survey_questions')
+                        .select('*')
+                        .order('urutan', { ascending: true })
+                        .order('id', { ascending: true });
+                    if (error) throw error;
+                    pqData = (data || []).slice().sort((a, b) => {
+                        const ka = pqKategoriUrut[a.kategori || 'tambahan'] ?? 1;
+                        const kb = pqKategoriUrut[b.kategori || 'tambahan'] ?? 1;
+                        if (ka !== kb) return ka - kb;
+                        const ua = Number(a.urutan) || 0, ub = Number(b.urutan) || 0;
+                        if (ua !== ub) return ua - ub;
+                        return Number(a.id) - Number(b.id);
+                    });
+                    renderPertanyaanList();
+                } catch (err) {
+                    console.error('Gagal memuat pertanyaan:', err);
+                    pqList.innerHTML = '<p style="color:#c0392b; font-size:0.9rem;">Gagal memuat pertanyaan. Pastikan tabel "survey_questions" sudah dibuat di Supabase (jalankan script SQL-nya).</p>';
+                }
+            }
+
+            function bukaModalPertanyaan() {
+                pqResetForm();
+                pqSetMsg('');
+                pqModal.classList.add('show');
+                loadPertanyaanAdmin();
+            }
+            function tutupModalPertanyaan() {
+                pqModal.classList.remove('show');
+            }
+
+            async function simpanPertanyaan() {
+                const teks = pqTeks.value.trim();
+                const tipe = pqTipe.value;
+                let opsi = null;
+
+                if (!teks) { pqSetMsg('Teks pertanyaan wajib diisi.', 'error'); return; }
+                if (tipe === 'pilihan') {
+                    opsi = pqOpsi.value.split('\n').map(o => o.trim()).filter(Boolean);
+                    opsi = Array.from(new Set(opsi));
+                    if (opsi.length < 2) { pqSetMsg('Isi minimal 2 pilihan jawaban (satu per baris).', 'error'); return; }
+                }
+
+                const urutanBaru = pqData
+                    .filter(q => (q.kategori || 'tambahan') === 'tambahan')
+                    .reduce((m, q) => Math.max(m, Number(q.urutan) || 0), 0) + 1;
+
+                pqSimpan.disabled = true;
+                pqSetMsg('');
+                try {
+                    const { error } = await surveyClient.from('survey_questions').insert({
+                        teks_pertanyaan: teks,
+                        tipe: tipe,
+                        opsi: opsi,
+                        wajib: pqWajib.checked,
+                        aktif: true,
+                        urutan: urutanBaru,
+                        kategori: 'tambahan',
+                        kolom_jawaban: null
+                    });
+                    if (error) throw error;
+                    pqResetForm();
+                    pqSetMsg('Pertanyaan berhasil disimpan dan akan tampil di halaman survey.', 'ok');
+                    await loadPertanyaanAdmin();
+                } catch (err) {
+                    console.error('Gagal menyimpan pertanyaan:', err);
+                    pqSetMsg('Gagal menyimpan: ' + (err.message || 'terjadi kesalahan') , 'error');
+                } finally {
+                    pqSimpan.disabled = false;
+                }
+            }
+
+            pqList.addEventListener('click', async (e) => {
+                const btn = e.target.closest('button[data-act]');
+                if (!btn) return;
+                const id = btn.getAttribute('data-id');
+                const q = pqData.find(x => String(x.id) === String(id));
+                if (!q) return;
+
+                try {
+                    if (btn.dataset.act === 'toggle') {
+                        const { error } = await surveyClient.from('survey_questions').update({ aktif: !q.aktif }).eq('id', q.id);
+                        if (error) throw error;
+                    } else if (btn.dataset.act === 'hapus') {
+                        const pesanHapus = q.kolom_jawaban
+                            ? 'Ini pertanyaan bawaan (kolom ' + q.kolom_jawaban + '). Jika dihapus, pertanyaan ini tidak tampil lagi di survey. Untuk sementara, lebih aman memakai tombol sembunyikan. Tetap hapus?'
+                            : 'Hapus pertanyaan ini? Jawaban yang sudah terkirim tetap tersimpan.';
+                        if (!confirm(pesanHapus)) return;
+                        const { error } = await surveyClient.from('survey_questions').delete().eq('id', q.id);
+                        if (error) throw error;
+                    }
+                    pqSetMsg('');
+                    await loadPertanyaanAdmin();
+                } catch (err) {
+                    console.error('Gagal memperbarui pertanyaan:', err);
+                    pqSetMsg('Gagal: ' + (err.message || 'terjadi kesalahan'), 'error');
+                }
+            });
+
+            // Reset: hapus SEMUA pertanyaan di tabel survey_questions
+            const pqResetBtn = document.getElementById('pqReset');
+            pqResetBtn.addEventListener('click', async () => {
+                if (!pqData.length) { pqSetMsg('Tidak ada pertanyaan untuk direset.', 'error'); return; }
+
+                const ok = confirm(
+                    'PERINGATAN: semua ' + pqData.length + ' pertanyaan di database akan DIHAPUS, ' +
+                    'termasuk pertanyaan bawaan.\n\n' +
+                    'Halaman survey tidak akan menampilkan pertanyaan sampai Anda membuat pertanyaan baru. ' +
+                    'Jawaban responden yang sudah terkirim tidak ikut terhapus.\n\nLanjutkan?'
+                );
+                if (!ok) return;
+
+                const ketik = prompt('Ketik RESET (huruf besar) untuk mengonfirmasi penghapusan semua pertanyaan:');
+                if (ketik === null) return;
+                if (ketik.trim() !== 'RESET') { pqSetMsg('Reset dibatalkan: kata konfirmasi tidak sesuai.', 'error'); return; }
+
+                pqResetBtn.disabled = true;
+                pqSetMsg('');
+                try {
+                    // PostgREST mewajibkan filter pada DELETE; id selalu > 0 sehingga semua baris terhapus.
+                    const { error } = await surveyClient.from('survey_questions').delete().gt('id', 0);
+                    if (error) throw error;
+                    pqSetMsg('Semua pertanyaan berhasil dihapus.', 'ok');
+                    await loadPertanyaanAdmin();
+                } catch (err) {
+                    console.error('Gagal reset pertanyaan:', err);
+                    pqSetMsg('Gagal reset: ' + (err.message || 'terjadi kesalahan'), 'error');
+                } finally {
+                    pqResetBtn.disabled = false;
+                }
+            });
+
+            pqTipe.addEventListener('change', pqToggleOpsi);
+            pqSimpan.addEventListener('click', simpanPertanyaan);
+            document.getElementById('btnBuatPertanyaan').addEventListener('click', bukaModalPertanyaan);
+            document.getElementById('pqClose').addEventListener('click', tutupModalPertanyaan);
+            document.getElementById('pqBatal').addEventListener('click', tutupModalPertanyaan);
+            pqModal.addEventListener('click', (e) => { if (e.target === pqModal) tutupModalPertanyaan(); });
 
             document.addEventListener('DOMContentLoaded', loadSchoolIdentity);
             document.addEventListener('DOMContentLoaded', loadSurveyResponses);
