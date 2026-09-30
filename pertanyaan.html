@@ -468,30 +468,107 @@
   }
   loadSchoolName();
 
+  // ---------- Pertanyaan survey: SELURUHNYA diambil dari tabel "survey_questions" ----------
+  // Kolom yang dipakai: id, teks_pertanyaan, tipe (skala | pilihan | teks), opsi,
+  // wajib, aktif, urutan, kategori (kepuasan | tambahan | saran), kolom_jawaban.
+  // - kolom_jawaban terisi (mis. "q1", "saran2") -> jawaban disimpan ke kolom itu di survey_responses
+  // - kolom_jawaban kosong (pertanyaan buatan admin) -> disimpan di kolom JSON "jawaban_tambahan"
+  let surveyQuestions = [];
+  const KATEGORI_URUT = { kepuasan: 0, tambahan: 1, saran: 2 };
+  const KATEGORI_LABEL = {
+    kepuasan: "Pertanyaan Kepuasan Layanan Sekolah",
+    tambahan: "Pertanyaan Tambahan",
+    saran: "Saran dan Kritik"
+  };
+
+  async function loadSurveyQuestions(){
+    const headers = {
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": "Bearer " + SUPABASE_ANON_KEY
+    };
+    const daftarUrl = [
+      SUPABASE_URL + "/survey_questions?select=*&order=urutan.asc,id.asc",
+      SUPABASE_URL + "/survey_questions?select=*"
+    ];
+    for (let i = 0; i < daftarUrl.length; i++){
+      try{
+        const res = await fetch(daftarUrl[i], { headers: headers, cache: "no-store" });
+        if (!res.ok){
+          console.error("survey_questions gagal dimuat (HTTP " + res.status + "):", await res.text());
+          continue;
+        }
+        const rows = await res.json();
+        if (!Array.isArray(rows)) return [];
+        if (rows.length === 0){
+          console.warn("survey_questions kosong. Jalankan script SQL (isi data awal) dan cek policy SELECT untuk role anon.");
+        }
+        return rows
+          .filter(function(r){ return r && r.aktif !== false && String(r.teks_pertanyaan || "").trim() !== ""; })
+          .sort(function(x, y){
+            const kx = KATEGORI_URUT[x.kategori || "tambahan"] ?? 1;
+            const ky = KATEGORI_URUT[y.kategori || "tambahan"] ?? 1;
+            if (kx !== ky) return kx - ky;
+            const ux = Number(x.urutan) || 0, uy = Number(y.urutan) || 0;
+            if (ux !== uy) return ux - uy;
+            return Number(x.id) - Number(y.id);
+          });
+      }catch(err){
+        console.error("Gagal memuat pertanyaan survey:", err);
+      }
+    }
+    return [];
+  }
+
+  // Nama field form untuk sebuah pertanyaan
+  function fieldNameOf(q){
+    return q.kolom_jawaban ? String(q.kolom_jawaban) : ("custom_" + q.id);
+  }
+
   async function saveResponseToSupabase(formData){
     const payload = {
       responden_id: formData.get("id"),
       jenis_responden: formData.get("jenisResponden"),
       jenis_kelamin: formData.get("jenisKelamin"),
-      usia: parseInt(formData.get("usia"), 10),
-      saran1: formData.get("saran1") || null,
-      saran2: formData.get("saran2") || null,
-      saran3: formData.get("saran3") || null
+      usia: parseInt(formData.get("usia"), 10)
     };
-    for (let i = 1; i <= 15; i++){
-      payload["q" + i] = parseInt(formData.get("q" + i), 10);
+
+    const tambahan = {};
+    let adaTambahan = false;
+
+    surveyQuestions.forEach(function(q){
+      const raw = formData.get(fieldNameOf(q));
+      const teks = (raw === null || String(raw).trim() === "") ? null : String(raw).trim();
+
+      if (q.kolom_jawaban){
+        // Pertanyaan bawaan: simpan ke kolomnya (angka untuk skala, teks untuk lainnya)
+        payload[q.kolom_jawaban] = (q.tipe === "skala")
+          ? (teks === null ? null : parseInt(teks, 10))
+          : teks;
+      } else {
+        // Pertanyaan buatan admin: simpan ke JSON, lengkap dengan teks pertanyaannya
+        tambahan[q.id] = { pertanyaan: q.teks_pertanyaan, tipe: q.tipe, jawaban: teks };
+        adaTambahan = true;
+      }
+    });
+
+    if (adaTambahan) payload.jawaban_tambahan = tambahan;
+
+    async function kirim(body){
+      return fetch(SUPABASE_URL + "/survey_responses", {
+        method: "POST",
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": "Bearer " + SUPABASE_ANON_KEY,
+          "Content-Type": "application/json",
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify(body)
+      });
     }
 
-    const res = await fetch(SUPABASE_URL + "/survey_responses", {
-      method: "POST",
-      headers: {
-        "apikey": SUPABASE_ANON_KEY,
-        "Authorization": "Bearer " + SUPABASE_ANON_KEY,
-        "Content-Type": "application/json",
-        "Prefer": "return=minimal"
-      },
-      body: JSON.stringify(payload)
-    });
+    // Jika kolom jawaban_tambahan belum ada di tabel, Supabase menolak dan responden melihat pesan gagal
+    // (jawaban tidak lagi hilang diam-diam). Jalankan: alter table survey_responses add column jawaban_tambahan jsonb;
+    const res = await kirim(payload);
 
     if (!res.ok){
       const text = await res.text();
@@ -529,98 +606,73 @@
 
   const scaleLabels = ["Sangat Tidak Puas", "Tidak Puas", "Cukup", "Puas", "Sangat Puas"];
 
-  const likertQuestions = [
-    "Bagaimana tingkat kepuasan Anda terhadap kemudahan mendapatkan informasi yang dibutuhkan dari sekolah?",
-    "Bagaimana tingkat kepuasan Anda terhadap kejelasan informasi yang disampaikan oleh pihak sekolah?",
-    "Bagaimana tingkat kepuasan Anda terhadap kecepatan pelayanan yang diberikan oleh sekolah?",
-    "Bagaimana tingkat kepuasan Anda terhadap ketepatan pelayanan sesuai dengan kebutuhan siswa?",
-    "Bagaimana tingkat kepuasan Anda terhadap keramahan dan sikap petugas/guru dalam memberikan pelayanan?",
-    "Bagaimana tingkat kepuasan Anda terhadap kesopanan dan komunikasi petugas/guru saat melayani siswa?",
-    "Bagaimana tingkat kepuasan Anda terhadap kemudahan prosedur pelayanan yang harus dilakukan siswa?",
-    "Bagaimana tingkat kepuasan Anda terhadap persyaratan administrasi yang ditetapkan oleh sekolah?",
-    "Bagaimana tingkat kepuasan Anda terhadap pelayanan administrasi siswa, seperti surat-menyurat, dokumen, dan keperluan sekolah lainnya?",
-    "Bagaimana tingkat kepuasan Anda terhadap pelayanan informasi mengenai kegiatan dan program sekolah?",
-    "Bagaimana tingkat kepuasan Anda terhadap penanganan pengaduan atau keluhan siswa oleh pihak sekolah?",
-    "Bagaimana tingkat kepuasan Anda terhadap keterbukaan sekolah dalam menerima kritik dan saran dari siswa?",
-    "Bagaimana tingkat kepuasan Anda terhadap keadilan dan kesetaraan pelayanan yang diberikan kepada seluruh siswa?",
-    "Bagaimana tingkat kepuasan Anda terhadap kenyamanan fasilitas dan tempat pelayanan yang disediakan sekolah?",
-    "Secara keseluruhan, seberapa puas Anda terhadap pelayanan yang diberikan oleh sekolah?"
-  ];
-
-  const saranQuestions = [
-    "Pelayanan apa yang menurut Anda perlu ditingkatkan oleh sekolah?",
-    "Apa saran Anda untuk meningkatkan kualitas pelayanan sekolah?",
-    "Apakah Anda memiliki keluhan atau pengalaman terkait pelayanan sekolah yang ingin disampaikan?"
-  ];
+  (async function initSurvey(){
+  surveyQuestions = await loadSurveyQuestions();
 
   const card = document.querySelector(".card");
 
-  likertQuestions.forEach(function(q, i){
-    const groupName = "q" + (i + 1);
+  // Jika pertanyaan tidak bisa dimuat dari tabel, jangan tampilkan survey kosong.
+  if (surveyQuestions.length === 0){
+    document.getElementById("surveyForm").style.display = "none";
+    document.querySelector(".progress-track").style.display = "none";
+    document.querySelector(".progress-label").style.display = "none";
+    const notice = document.createElement("div");
+    notice.style.cssText = "text-align:center; padding:50px 20px; color:#6B7280;";
+    notice.innerHTML = "<h2 style=\"font-family:var(--font-display); font-weight:500; color:#1E2A38;\">Survey belum tersedia</h2>" +
+      "<p>Pertanyaan survey belum dapat dimuat. Silakan coba lagi beberapa saat lagi.</p>";
+    document.getElementById("surveyForm").insertAdjacentElement("afterend", notice);
+    return;
+  }
+
+  surveyQuestions.forEach(function(q){
+    const fieldName = fieldNameOf(q);
     const step = document.createElement("div");
     step.className = "step";
-    step.setAttribute("data-required", "true");
+    step.setAttribute("data-required", q.wajib === false ? "false" : "true");
 
     const kicker = document.createElement("p");
     kicker.className = "step-kicker";
-    kicker.textContent = "Pertanyaan Kepuasan Layanan Sekolah";
+    kicker.textContent = KATEGORI_LABEL[q.kategori || "tambahan"] || "Pertanyaan";
 
     const question = document.createElement("h2");
     question.className = "step-question";
-    question.textContent = q;
-
-    const list = document.createElement("div");
-    list.className = "option-list";
-    list.setAttribute("data-radio", groupName);
-
-    scaleLabels.forEach(function(label, idx){
-      const optLabel = document.createElement("label");
-      optLabel.className = "option";
-      const input = document.createElement("input");
-      input.type = "radio";
-      input.name = groupName;
-      input.value = idx + 1;
-      const span = document.createElement("span");
-      span.textContent = label;
-      optLabel.appendChild(input);
-      optLabel.appendChild(span);
-      list.appendChild(optLabel);
-    });
-
-    const error = document.createElement("p");
-    error.className = "step-error";
+    question.textContent = q.teks_pertanyaan;
 
     step.appendChild(kicker);
     step.appendChild(question);
-    step.appendChild(list);
-    step.appendChild(error);
-    card.appendChild(step);
-  });
 
-  saranQuestions.forEach(function(q, i){
-    const fieldName = "saran" + (i + 1);
-    const step = document.createElement("div");
-    step.className = "step";
-    step.setAttribute("data-required", "false");
+    if (q.tipe === "teks"){
+      const textarea = document.createElement("textarea");
+      textarea.name = fieldName;
+      textarea.placeholder = "Tuliskan jawaban Anda di sini...";
+      step.appendChild(textarea);
+    } else {
+      const list = document.createElement("div");
+      list.className = "option-list";
+      list.setAttribute("data-radio", fieldName);
 
-    const kicker = document.createElement("p");
-    kicker.className = "step-kicker";
-    kicker.textContent = "Saran dan Kritik";
+      const pilihan = (q.tipe === "pilihan" && Array.isArray(q.opsi) && q.opsi.length)
+        ? q.opsi.map(function(o){ return { label: String(o), value: String(o) }; })
+        : scaleLabels.map(function(l, idx){ return { label: l, value: String(idx + 1) }; });
 
-    const question = document.createElement("h2");
-    question.className = "step-question";
-    question.textContent = q;
-
-    const textarea = document.createElement("textarea");
-    textarea.name = fieldName;
-    textarea.placeholder = "Tuliskan jawaban Anda di sini...";
+      pilihan.forEach(function(pl){
+        const optLabel = document.createElement("label");
+        optLabel.className = "option";
+        const input = document.createElement("input");
+        input.type = "radio";
+        input.name = fieldName;
+        input.value = pl.value;
+        const span = document.createElement("span");
+        span.textContent = pl.label;
+        optLabel.appendChild(input);
+        optLabel.appendChild(span);
+        list.appendChild(optLabel);
+      });
+      step.appendChild(list);
+    }
 
     const error = document.createElement("p");
     error.className = "step-error";
-
-    step.appendChild(kicker);
-    step.appendChild(question);
-    step.appendChild(textarea);
     step.appendChild(error);
     card.appendChild(step);
   });
@@ -644,6 +696,8 @@
     }
     const input = step.querySelector("input");
     if (input) return input.value.trim() !== "";
+    const ta = step.querySelector("textarea");
+    if (ta) return ta.value.trim() !== "";
     return true;
   }
 
@@ -730,6 +784,7 @@
   });
 
   showStep(current);
+  })();
 </script>
 
 </body>
