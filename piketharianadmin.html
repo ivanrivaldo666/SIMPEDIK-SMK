@@ -160,7 +160,7 @@
             color: white;
         }
 
-        #statusFilter {
+        #statusFilter, #kelasFilter {
             padding: 8px 10px;
             border: 1px solid #4b5563;
             border-radius: 5px;
@@ -209,7 +209,7 @@
             .search-box input {
                 width: 100%;
             }
-            #statusFilter {
+            #statusFilter, #kelasFilter {
                 width: 100%;
             }
         }
@@ -294,6 +294,9 @@
                         <option value="Ya">Ya</option>
                         <option value="Tidak">Tidak Melaksanakan</option>
                     </select>
+                    <select id="kelasFilter">
+                        <option value="">Semua Kelas</option>
+                    </select>
                 </div>
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="Cari data...">
@@ -330,8 +333,8 @@
 
     <script>
         // --- Supabase Integration for Navbar ---
-        const supabaseUrl = 'https://mjvobqfcoutazqcovtlp.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qdm9icWZjb3V0YXpxY292dGxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzEwMzYsImV4cCI6MjA4NjE0NzAzNn0.jz6JaC9mMTMhLVhXSh1OCnFWDPZ0Cy2tUnHEmWxAR8o';
+        const supabaseUrl = 'https://hohuqhkeptuenmszkrdm.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhvaHVxaGtlcHR1ZW5tc3prcmRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NjU3MjYsImV4cCI6MjEwNjE0MTcyNn0.fTDDCmjUjoIjv9lNgLZelD5WMLrHggj-fR1-aQ0vjo4';
         
         // Deklarasi variabel global agar bisa diakses oleh semua fungsi
         let supabaseClient;
@@ -420,6 +423,7 @@
                 if (error) throw error;
 
                 jurnalDataList = data || [];
+                populateKelasFilter();
                 renderTable(1);
                 loadStats(); // Update stats when data loads
 
@@ -429,12 +433,32 @@
             }
         }
 
+        // Isi opsi filter Kelas dari data yang ada (urut alami: X-1, X-2, XI-1, ...)
+        function populateKelasFilter() {
+            const el = document.getElementById('kelasFilter');
+            const dipilih = el.value;
+            const daftar = Array.from(new Set(
+                jurnalDataList.map(i => String(i.kelas || '').trim()).filter(Boolean)
+            )).sort((a, b) => a.localeCompare(b, 'id', { numeric: true, sensitivity: 'base' }));
+
+            el.innerHTML = '<option value="">Semua Kelas</option>';
+            daftar.forEach(k => {
+                const opt = document.createElement('option');
+                opt.value = k;
+                opt.textContent = k;
+                el.appendChild(opt);
+            });
+            // Pertahankan pilihan sebelumnya saat refresh jika kelasnya masih ada
+            el.value = daftar.includes(dipilih) ? dipilih : '';
+        }
+
         // Render Table & Pagination
         function renderTable(page = 1) {
             currentPage = page;
             const tableBody = document.getElementById('jurnalTableBody');
             const searchFilter = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
+            const kelasFilter = document.getElementById('kelasFilter').value;
 
             // Filter Data
             const filteredData = jurnalDataList.filter(item => {
@@ -448,7 +472,8 @@
                 ).toLowerCase();
                 const matchSearch = text.includes(searchFilter);
                 const matchStatus = statusFilter ? item.status === statusFilter : true;
-                return matchSearch && matchStatus;
+                const matchKelas = kelasFilter ? String(item.kelas || '').trim() === kelasFilter : true;
+                return matchSearch && matchStatus && matchKelas;
             });
 
             // Pagination Calculation
@@ -533,6 +558,7 @@
         // Event Listeners
         document.getElementById('searchInput').addEventListener('input', () => renderTable(1));
         document.getElementById('statusFilter').addEventListener('change', () => renderTable(1));
+        document.getElementById('kelasFilter').addEventListener('change', () => renderTable(1));
         document.getElementById('refreshBtn').addEventListener('click', loadJurnalData);
 
         // Export PDF
@@ -579,6 +605,8 @@
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
             const statusFilterEl = document.getElementById('statusFilter');
             const statusTerm = statusFilterEl ? statusFilterEl.value : '';
+            const kelasFilterEl = document.getElementById('kelasFilter');
+            const kelasTerm = kelasFilterEl ? kelasFilterEl.value : '';
             
             let dataToExport = jurnalDataList.filter(item => {
                 const text = (
@@ -591,7 +619,8 @@
                 ).toLowerCase();
                 const matchSearch = searchTerm ? text.includes(searchTerm) : true;
                 const matchStatus = statusTerm ? item.status === statusTerm : true;
-                return matchSearch && matchStatus;
+                const matchKelas = kelasTerm ? String(item.kelas || '').trim() === kelasTerm : true;
+                return matchSearch && matchStatus && matchKelas;
             });
 
             const tableBody = dataToExport.map(item => {
